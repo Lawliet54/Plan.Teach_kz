@@ -16,22 +16,12 @@ import {
   getLabs,
   getProjectTasks,
   getTopicBySlug,
-  getTopicContents,
+  getTopicContentsForLevel,
   getTopicObjectives,
+  getStudentLevelLabel,
 } from "@/lib/content";
 import { Button } from "@/components/ui/Button";
 import { Card, CardText, CardTitle } from "@/components/ui/Card";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { AiTutor } from "@/components/ai/AiTutor";
-import {
-  buildLocalAiProfile,
-  createLocalTutorReply,
-  type LocalAiProfile,
-} from "@/lib/local-ai";
-import {
-  createOrGetTopicChat,
-  getChatHistoryAction,
-} from "@/app/ai/actions";
 
 type TopicPageProps = {
   params: Promise<{
@@ -46,6 +36,26 @@ function getBlockLabel(blockType: string) {
   if (blockType === "video") return "Видео";
   if (blockType === "ai_prompt") return "AI prompt";
   return "Ескерту";
+}
+
+function getBlockStyle(blockType: string) {
+  if (blockType === "formula") {
+    return "border-violet-200 bg-violet-50";
+  }
+
+  if (blockType === "example") {
+    return "border-emerald-200 bg-emerald-50";
+  }
+
+  if (blockType === "note") {
+    return "border-amber-200 bg-amber-50";
+  }
+
+  return "border-slate-200 bg-white";
+}
+
+function buildAiHref(question: string) {
+  return `/ai?q=${encodeURIComponent(question)}`;
 }
 
 export default async function TopicPage({ params }: TopicPageProps) {
@@ -79,75 +89,44 @@ export default async function TopicPage({ params }: TopicPageProps) {
     notFound();
   }
 
-  const supabase = await createSupabaseServerClient();
-  const [contents, objectives, labs, projects, { data: latestResult }] =
-    await Promise.all([
-    getTopicContents(topic.id),
+  const [contents, objectives, labs, projects] = await Promise.all([
+    getTopicContentsForLevel(topic.id, profile.level),
     getTopicObjectives(topic.id),
     getLabs(topic.grade),
     getProjectTasks(topic.grade),
-    supabase
-      .from("diagnostic_results")
-      .select("*")
-      .eq("student_id", profile.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
   ]);
-
-  // Setup AI Tutor chat
-  const chatData = await createOrGetTopicChat(topic.id, topic.title);
-  const chatMessages = await getChatHistoryAction(chatData.id);
-  
-  // Map TopicContent to AI-friendly format
-  const aiContents = contents.map((c) => ({
-    content_type: c.block_type,
-    content_text: c.body || c.title || "",
-  }));
 
   const relatedLabs = labs.filter((lab) => lab.topic_id === topic.id);
   const relatedProjects = projects.filter((task) => task.topic_id === topic.id);
-  const aiProfile =
-    (latestResult?.recommended_route as LocalAiProfile | null)?.parameter_count ===
-    1000
-      ? (latestResult?.recommended_route as LocalAiProfile)
-      : buildLocalAiProfile({
-          profile,
-          totalScore: latestResult?.total_score ?? 0,
-          maxScore: latestResult?.max_score ?? 1,
-          level: profile.level ?? "beginner",
-          gradeScores: latestResult?.grade_scores,
-          strongTopics: (latestResult?.strong_topics as string[] | undefined) ?? [],
-          weakTopics: (latestResult?.weak_topics as string[] | undefined) ?? [],
-        });
-  const topicTutorReply = createLocalTutorReply({
-    question: `${topic.title} тақырыбын түсіндір`,
-    aiProfile,
-  });
+  const levelLabel = getStudentLevelLabel(profile.level);
 
   return (
     <AppShell profile={profile} active="/learn">
       <div className="mb-4">
         <Link
-          href={`/learn?grade=${topic.grade}`}
+          href="/learn"
           className="mb-3 inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#5b3ee4]"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          {topic.grade}-сынып тақырыптарына қайту
+          Тақырыптарға қайту
         </Link>
 
         <section className="purple-gradient rounded-[18px] p-5 text-white shadow-lg shadow-[#5b3ee4]/20">
-          <div className="grid gap-4 lg:grid-cols-[1fr_240px] lg:items-center">
+          <div className="grid gap-4 lg:grid-cols-[1fr_220px] lg:items-center">
             <div>
               <div className="mb-3 flex flex-wrap gap-2">
                 <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold">
-                  {topic.grade} сынып
+                  5 негізгі тақырып
+                </span>
+
+                <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold">
+                  {levelLabel}
                 </span>
 
                 <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold">
                   {topic.content_status === "ready"
-                    ? "Дайын тақырып"
-                    : "Placeholder"}
+                    ? "Толық дайын"
+                    : "Кейін толықтырылады"}
                 </span>
 
                 {topic.has_bjb ? (
@@ -161,28 +140,28 @@ export default async function TopicPage({ params }: TopicPageProps) {
                 {topic.title}
               </h1>
 
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-white/82">
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
                 {topic.description ||
-                  "Бұл тақырып КТЖ бойынша базаға енгізілді. Теория, тапсырмалар және видео материалдар кейін толықтырылады."}
+                  "Бұл тақырып бойынша теория, мысал, формула және AI көмекші қолжетімді."}
               </p>
             </div>
 
             <div className="hidden rounded-2xl border border-white/15 bg-white/10 p-4 lg:block">
-              <BookOpen className="mx-auto h-16 w-16 text-white/85" />
+              <BookOpen className="mx-auto h-14 w-14 text-white/85" />
               <p className="mt-3 text-center text-xs font-bold text-white/80">
-                Оқу материалы
+                Деңгейге сай оқу материалы
               </p>
             </div>
           </div>
         </section>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_330px]">
+      <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
         <div className="space-y-4">
           <Card>
             <div className="mb-3 flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-[#5b3ee4]" />
-              <CardTitle>Оқу мақсаттары</CardTitle>
+              <CardTitle>Оқу бағыты</CardTitle>
             </div>
 
             {objectives.length > 0 ? (
@@ -202,9 +181,15 @@ export default async function TopicPage({ params }: TopicPageProps) {
                 ))}
               </div>
             ) : (
-              <CardText>
-                Бұл тақырыптың оқу мақсаттары кейін енгізіледі.
-              </CardText>
+              <div className="rounded-2xl border border-[#d7e3ff] bg-[#f0edff] p-3">
+                <p className="text-sm font-black text-slate-950">
+                  Бұл тақырыпта сіз мынаны меңгересіз:
+                </p>
+                <p className="mt-1 text-xs leading-5 text-slate-600">
+                  негізгі ұғымды түсіну, формуланы тану, мысал арқылы қолдану
+                  және есеп шығарғанда өлшем бірлікті дұрыс жазу.
+                </p>
+              </div>
             )}
           </Card>
 
@@ -214,15 +199,30 @@ export default async function TopicPage({ params }: TopicPageProps) {
               <CardTitle>Теория және материалдар</CardTitle>
             </div>
 
+            <div className="mb-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs font-bold text-slate-500">
+                Қазір көрсетіліп тұрған деңгей:
+              </p>
+              <p className="mt-1 text-sm font-black text-[#5b3ee4]">
+                {levelLabel}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                Егер оқушы деңгейі өзгерсе, осы тақырыптың түсіндіру стилі де
+                өзгереді.
+              </p>
+            </div>
+
             {contents.length > 0 ? (
               <div className="space-y-3">
                 {contents.map((content) => (
                   <article
                     key={content.id}
-                    className="rounded-2xl border border-slate-200 bg-white p-4"
+                    className={`rounded-2xl border p-4 ${getBlockStyle(
+                      content.block_type
+                    )}`}
                   >
                     <div className="mb-2 flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-[#f0edff] px-2.5 py-1 text-[11px] font-black text-[#5b3ee4]">
+                      <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-[#5b3ee4]">
                         {getBlockLabel(content.block_type)}
                       </span>
 
@@ -234,7 +234,7 @@ export default async function TopicPage({ params }: TopicPageProps) {
                     </div>
 
                     {content.body ? (
-                      <p className="text-sm leading-7 text-slate-700">
+                      <p className="whitespace-pre-line text-sm leading-7 text-slate-700">
                         {content.body}
                       </p>
                     ) : (
@@ -244,7 +244,7 @@ export default async function TopicPage({ params }: TopicPageProps) {
                     )}
 
                     {content.media_url ? (
-                      <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                      <div className="mt-3 rounded-2xl border border-slate-200 bg-white/70 p-3">
                         <p className="text-xs font-bold text-slate-500">
                           Медиа: {content.media_url}
                         </p>
@@ -257,28 +257,69 @@ export default async function TopicPage({ params }: TopicPageProps) {
               <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center">
                 <BookOpen className="mx-auto h-8 w-8 text-slate-400" />
                 <p className="mt-2 text-sm font-bold text-slate-700">
-                  Теория кейін толықтырылады
+                  Бұл тақырыптың материалы әлі енгізілмеген
                 </p>
                 <p className="mt-1 text-xs leading-5 text-slate-500">
-                  Бұл placeholder тақырып. Қазір тек КТЖ skeleton ретінде
-                  енгізілген.
+                  Supabase-та topic_contents кестесінде осы тақырыпқа арналған
+                  теория блоктары бар екенін тексеріңіз.
                 </p>
               </div>
             )}
           </Card>
 
-          <AiTutor
-            chatId={chatData.id}
-            topicId={topic.id}
-            topicTitle={topic.title}
-            contents={aiContents}
-            initialMessages={chatMessages}
-          />
+          <Card>
+            <div className="mb-3 flex items-center gap-2">
+              <BrainCircuit className="h-4 w-4 text-[#5b3ee4]" />
+              <CardTitle>AI көмекші</CardTitle>
+            </div>
+
+            <div className="rounded-2xl border border-[#d7e3ff] bg-[#f0edff] p-4">
+              <p className="text-sm font-black text-slate-950">
+                Осы тақырып бойынша AI-дан сұраңыз
+              </p>
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                AI көмекші сұраққа дайын шаблонмен ғана емес, диалог контекстін
+                ескеріп жауап береді. Есеп берсеңіз, “Берілгені — Формула —
+                Шешуі — Жауабы” түрінде шығарып бере алады.
+              </p>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Link
+                  href={buildAiHref(`${topic.title} тақырыбын қарапайым тілмен түсіндір`)}
+                  className="inline-flex h-8 items-center rounded-xl border border-[#ddd6ff] bg-white px-3 text-xs font-bold text-[#5b3ee4] transition hover:bg-[#f7f5ff]"
+                >
+                  Қарапайым тілмен түсіндір
+                </Link>
+
+                <Link
+                  href={buildAiHref(`${topic.title} тақырыбын формуламен түсіндір`)}
+                  className="inline-flex h-8 items-center rounded-xl border border-[#ddd6ff] bg-white px-3 text-xs font-bold text-[#5b3ee4] transition hover:bg-[#f7f5ff]"
+                >
+                  Формуламен түсіндір
+                </Link>
+
+                <Link
+                  href={buildAiHref(`${topic.title} бойынша бір мысал келтір`)}
+                  className="inline-flex h-8 items-center rounded-xl border border-[#ddd6ff] bg-white px-3 text-xs font-bold text-[#5b3ee4] transition hover:bg-[#f7f5ff]"
+                >
+                  Мысал келтір
+                </Link>
+
+                <Link
+                  href={buildAiHref(`${topic.title} тақырыбы бойынша есеп шығарып көрсет`)}
+                  className="inline-flex h-8 items-center rounded-xl border border-[#ddd6ff] bg-white px-3 text-xs font-bold text-[#5b3ee4] transition hover:bg-[#f7f5ff]"
+                >
+                  Есеп шығару
+                </Link>
+              </div>
+            </div>
+          </Card>
         </div>
 
         <aside className="space-y-4">
           <Card>
             <CardTitle>Тақырып әрекеттері</CardTitle>
+
             <div className="mt-3 space-y-2">
               <Button href="/tasks" className="w-full">
                 <ClipboardCheck className="mr-1.5 h-4 w-4" />

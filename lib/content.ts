@@ -228,3 +228,68 @@ export async function getSectionsWithTopics(grade?: number) {
     topics: topics.filter((topic) => topic.section_id === section.id),
   }));
 }
+
+export const coreTopicSlugs = [
+  "core-physics-phenomena",
+  "core-measurement-units",
+  "core-speed-motion",
+  "core-density",
+  "core-pressure",
+];
+
+export type TopicLevel = "beginner" | "intermediate" | "advanced";
+
+export function normalizeStudentLevel(level?: string | null): TopicLevel {
+  if (level === "advanced") return "advanced";
+  if (level === "intermediate") return "intermediate";
+  return "beginner";
+}
+
+export function getStudentLevelLabel(level?: string | null) {
+  if (level === "advanced") return "Жоғары деңгей";
+  if (level === "intermediate") return "Орта деңгей";
+  return "Бастапқы деңгей";
+}
+
+export async function getCoreReadyTopics() {
+  const supabase = await createSupabaseServerClient();
+
+  const { data, error } = await supabase
+    .from("topics")
+    .select("*")
+    .in("slug", coreTopicSlugs)
+    .eq("is_active", true)
+    .eq("content_status", "ready")
+    .order("ktz_order", { ascending: true });
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data as Topic[];
+}
+
+export async function getTopicContentsForLevel(
+  topicId: string,
+  level?: string | null
+) {
+  const safeLevel = normalizeStudentLevel(level);
+
+  const supabase = await createSupabaseServerClient();
+
+  const { data, error } = await supabase
+    .from("topic_contents")
+    .select("*")
+    .eq("topic_id", topicId)
+    .eq("is_active", true)
+    .in("target_level", ["all", safeLevel])
+    .order("order_index", { ascending: true });
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data as (TopicContent & {
+    target_level: "all" | "beginner" | "intermediate" | "advanced";
+  })[];
+}
