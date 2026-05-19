@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft, ClipboardCheck } from "lucide-react";
-import { submitTaskAction } from "@/app/tasks/actions";
 import { AppShell } from "@/components/layout/AppShell";
 import { AuthMessage } from "@/components/auth/AuthMessage";
 import { Button } from "@/components/ui/Button";
@@ -52,6 +51,9 @@ export default async function TaskPage({ params, searchParams }: TaskPageProps) 
   const options = Array.isArray(task.options)
     ? task.options.filter(isTaskOption)
     : [];
+  const selectedAnswer = latestAttempt?.answer_text?.trim() ?? "";
+  const correctAnswer = task.correct_answer?.trim() ?? "";
+  const shouldShowAnswer = Boolean(latestAttempt);
 
   return (
     <AppShell profile={profile} active="/tasks">
@@ -101,15 +103,50 @@ export default async function TaskPage({ params, searchParams }: TaskPageProps) 
 
           <AuthMessage error={query?.error} success={query?.success} />
 
-          <form action={submitTaskAction} className="mt-4 space-y-3">
-            <input type="hidden" name="task_id" value={task.id} />
+          {shouldShowAnswer ? (
+            <div
+              className={`mt-4 rounded-2xl border p-4 text-sm ${
+                latestAttempt?.is_correct === false
+                  ? "border-rose-200 bg-rose-50 text-rose-800"
+                  : "border-emerald-200 bg-emerald-50 text-emerald-800"
+              }`}
+            >
+              <p className="font-black">
+                {latestAttempt?.is_correct === false
+                  ? "Жауап қате болды."
+                  : latestAttempt?.is_correct === true
+                    ? "Жауап дұрыс."
+                    : "Жауап сақталды."}
+              </p>
+              {correctAnswer ? (
+                <p className="mt-1">
+                  Дұрыс жауап:{" "}
+                  <span className="font-black">{correctAnswer}</span>
+                </p>
+              ) : null}
+              {latestAttempt?.auto_feedback ? (
+                <p className="mt-2 leading-6">{latestAttempt.auto_feedback}</p>
+              ) : null}
+            </div>
+          ) : null}
 
+          <form
+            action={`/tasks/${task.id}/submit`}
+            method="post"
+            className="mt-4 space-y-3"
+          >
             {task.answer_type === "multiple_choice" && options.length > 0 ? (
               <div className="grid gap-2">
                 {options.map((option) => (
                   <label
                     key={option.key}
-                    className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 text-sm transition hover:border-[#5b4ce6]/50"
+                    className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm transition hover:border-[#5b4ce6]/50 ${
+                      shouldShowAnswer && option.key === correctAnswer
+                        ? "border-emerald-300 bg-emerald-50"
+                        : shouldShowAnswer && option.key === selectedAnswer
+                          ? "border-rose-300 bg-rose-50"
+                          : "border-slate-200 bg-white"
+                    }`}
                   >
                     <input
                       type="radio"
@@ -117,12 +154,18 @@ export default async function TaskPage({ params, searchParams }: TaskPageProps) 
                       value={option.key}
                       className="mt-1"
                       required
+                      defaultChecked={option.key === selectedAnswer}
                     />
                     <span>
                       <span className="mr-1 font-black text-[#5b4ce6]">
                         {option.key}.
                       </span>
                       {option.text}
+                      {shouldShowAnswer && option.key === correctAnswer ? (
+                        <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-black text-emerald-700">
+                          Дұрыс жауап
+                        </span>
+                      ) : null}
                     </span>
                   </label>
                 ))}
@@ -133,6 +176,7 @@ export default async function TaskPage({ params, searchParams }: TaskPageProps) 
                 rows={5}
                 required
                 placeholder="Жауабыңызды жазыңыз..."
+                defaultValue={selectedAnswer}
                 className="w-full rounded-2xl border border-slate-200 bg-white p-3 text-sm leading-6 outline-none transition focus:border-[#5b4ce6]"
               />
             )}

@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { ClipboardList } from "lucide-react";
-import { submitDiagnosticAction } from "@/app/onboarding/diagnostic/actions";
 import { AuthMessage } from "@/components/auth/AuthMessage";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -81,7 +80,11 @@ export default async function DiagnosticPage({
 
         <AuthMessage error={params?.error || error || undefined} />
 
-        <form action={submitDiagnosticAction} className="space-y-4">
+        <form
+          action="/onboarding/diagnostic/submit"
+          method="post"
+          className="space-y-4"
+        >
           {[7, 8, 9, 10, 11].map((grade) => {
             const gradeQuestions = grouped[grade] ?? [];
 

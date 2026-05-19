@@ -6,7 +6,6 @@ import {
   FlaskConical,
   Sparkles,
 } from "lucide-react";
-import { saveInterestsAction } from "@/app/onboarding/interests/actions";
 import { AuthMessage } from "@/components/auth/AuthMessage";
 import { Button } from "@/components/ui/Button";
 import { physicsInterests } from "@/data/physics-interests";
@@ -80,7 +79,7 @@ export default async function InterestsPage({
 
         <AuthMessage error={params?.error} />
 
-        <form action={saveInterestsAction}>
+        <form action="/onboarding/interests/submit" method="post">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {physicsInterests.map((interest, index) => {
               const Icon = icons[index % icons.length];
