@@ -27,21 +27,23 @@ export default async function TeacherStudentsPage() {
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {students.map((student) => (
-          <Card key={student.id}>
-            <div className="mb-3 grid h-10 w-10 place-items-center rounded-xl bg-[#f1efff]">
-              <UsersRound className="h-5 w-5 text-[#5b4ce6]" />
-            </div>
-            <CardTitle>{student.full_name}</CardTitle>
-            <CardText>{student.email || "Email жоқ"}</CardText>
-            <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-bold">
-              <span className="rounded-full bg-slate-50 px-2.5 py-1 text-slate-600">
-                {student.level || "level жоқ"}
-              </span>
-              <span className="rounded-full bg-[#f1efff] px-2.5 py-1 text-[#5b4ce6]">
-                {student.diagnostic_completed ? "Диагностика өтті" : "Күтілуде"}
-              </span>
-            </div>
-          </Card>
+          <Link key={student.id} href={`/teacher/students/${student.id}`}>
+            <Card className="h-full transition-shadow hover:shadow-md">
+              <div className="mb-3 grid h-10 w-10 place-items-center rounded-xl bg-[#f1efff]">
+                <UsersRound className="h-5 w-5 text-[#5b4ce6]" />
+              </div>
+              <CardTitle>{student.full_name}</CardTitle>
+              <CardText>{student.email || "Email жоқ"}</CardText>
+              <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-bold">
+                <span className="rounded-full bg-slate-50 px-2.5 py-1 text-slate-600">
+                  {student.level || "level жоқ"}
+                </span>
+                <span className="rounded-full bg-[#f1efff] px-2.5 py-1 text-[#5b4ce6]">
+                  {student.diagnostic_completed ? "Диагностика өтті" : "Күтілуде"}
+                </span>
+              </div>
+            </Card>
+          </Link>
         ))}
       </div>
 

@@ -1,77 +1,77 @@
 import { redirect } from "next/navigation";
-import { BrainCircuit, Send } from "lucide-react";
+import { AiChatClient } from "@/components/ai/AiChatClient";
 import { AppShell } from "@/components/layout/AppShell";
-import { Card, CardText, CardTitle } from "@/components/ui/Card";
 import { getCurrentProfile } from "@/lib/auth";
+import { getStudentInterests } from "@/lib/interests";
+import {
+  buildLocalAiProfile,
+  type LocalAiProfile,
+} from "@/lib/local-ai";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export default async function AiPage() {
+type AiPageProps = {
+  searchParams?: Promise<{
+    q?: string;
+  }>;
+};
+
+export default async function AiPage({ searchParams }: AiPageProps) {
+  const params = await searchParams;
   const profile = await getCurrentProfile();
 
   if (!profile) redirect("/login");
-  if (profile.role === "student" && !profile.teacher_id) redirect("/onboarding/teacher-select");
-  if (profile.role === "student" && !profile.diagnostic_completed) redirect("/onboarding/diagnostic");
-  if (profile.role === "student" && !profile.onboarding_completed) redirect("/onboarding/interests");
+  if (profile.role === "student" && !profile.teacher_id) {
+    redirect("/onboarding/teacher-select");
+  }
+  if (profile.role === "student" && !profile.diagnostic_completed) {
+    redirect("/onboarding/diagnostic");
+  }
+  if (profile.role === "student" && !profile.onboarding_completed) {
+    redirect("/onboarding/interests");
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const [{ data: latestResult }, interests] =
+    profile.role === "student"
+      ? await Promise.all([
+          supabase
+            .from("diagnostic_results")
+            .select("*")
+            .eq("student_id", profile.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+          getStudentInterests(profile.id),
+        ])
+      : [{ data: null }, []];
+  const aiProfile =
+    (latestResult?.recommended_route as LocalAiProfile | null)?.parameter_count ===
+    1000
+      ? (latestResult?.recommended_route as LocalAiProfile)
+      : buildLocalAiProfile({
+          profile,
+          totalScore: latestResult?.total_score ?? 0,
+          maxScore: latestResult?.max_score ?? 1,
+          level: profile.level ?? "beginner",
+          gradeScores: latestResult?.grade_scores,
+          strongTopics: (latestResult?.strong_topics as string[] | undefined) ?? [],
+          weakTopics: (latestResult?.weak_topics as string[] | undefined) ?? [],
+          interests: interests.map((interest) => interest.title),
+        });
 
   return (
-    <AppShell profile={profile} active="/ai">
-      <div className="mb-4">
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#5b4ce6]">
-          AI көмекші
-        </p>
-        <h1 className="mt-1 text-2xl font-black text-slate-950">
-          Физика бойынша көмек
-        </h1>
-      </div>
-
-      <div className="grid gap-3 lg:grid-cols-[1fr_320px]">
-        <Card>
-          <div className="mb-4 flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#f1efff]">
-              <BrainCircuit className="h-5 w-5 text-[#5b4ce6]" />
-            </div>
-            <div>
-              <CardTitle>AI Tutor MVP</CardTitle>
-              <CardText>Қазір бұл demo чат. API қосылғанда толық жауап береді.</CardText>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-[#ddd6ff] bg-[#f1efff] p-4 text-sm leading-6 text-slate-700">
-            Сәлем, {profile.full_name}! Физикадан сұрағыңызды жазыңыз. MVP-де
-            жауап үлгісі көрсетіледі, кейін OpenAI/Supabase chat history қосамыз.
-          </div>
-
-          <form className="mt-4 flex gap-2">
-            <input
-              className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#5b4ce6]"
-              placeholder="Мысалы: Ом заңын түсіндір"
-            />
-            <button
-              type="button"
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#5b4ce6] px-4 text-sm font-bold text-white"
-            >
-              <Send className="h-4 w-4" />
-              Жіберу
-            </button>
-          </form>
-        </Card>
-
-        <Card>
-          <CardTitle>Жылдам сұрақтар</CardTitle>
-          <div className="mt-3 grid gap-2">
-            {["Формуланы түсіндір", "Мысал есеп бер", "Қате жерімді тап"].map(
-              (item) => (
-                <button
-                  type="button"
-                  key={item}
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm font-bold text-slate-700 hover:border-[#5b4ce6]/40"
-                >
-                  {item}
-                </button>
-              )
-            )}
-          </div>
-        </Card>
-      </div>
+    <AppShell
+      profile={profile}
+      active="/ai"
+      hideTopbar
+      contentClassName="h-full max-w-none p-0 sm:p-0"
+    >
+      <AiChatClient
+        aiProfile={aiProfile}
+        displayName={profile.full_name || "Оқушы"}
+        storageKey={`plan-teach-ai-chats:${profile.id}`}
+        initialQuestion={params?.q}
+      />
     </AppShell>
   );
 }

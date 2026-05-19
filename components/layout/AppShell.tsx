@@ -35,6 +35,8 @@ type AppShellProps = {
   profile: Profile;
   active?: string;
   children: React.ReactNode;
+  hideTopbar?: boolean;
+  contentClassName?: string;
 };
 
 function Dots() {
@@ -97,7 +99,13 @@ const adminNav: NavItem[] = [
   { href: "/profile", label: "Жеке кабинет", icon: Settings },
 ];
 
-export function AppShell({ profile, active, children }: AppShellProps) {
+export function AppShell({
+  profile,
+  active,
+  children,
+  hideTopbar = false,
+  contentClassName,
+}: AppShellProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -257,8 +265,9 @@ export function AppShell({ profile, active, children }: AppShellProps) {
         </aside>
 
         <div className="flex min-h-0 flex-col">
-          <header className="z-10 shrink-0 border-b border-[var(--border)] bg-white/88 backdrop-blur">
-            <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2 sm:px-5 sm:py-3">
+          {hideTopbar ? null : (
+            <header className="z-10 shrink-0 border-b border-[var(--border)] bg-white/88 backdrop-blur">
+              <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2 sm:px-5 sm:py-3">
               <div className="flex items-center gap-2 sm:gap-3">
                 <button
                   type="button"
@@ -313,11 +322,17 @@ export function AppShell({ profile, active, children }: AppShellProps) {
                   </div>
                 </div>
               </div>
-            </div>
-          </header>
+              </div>
+            </header>
+          )}
 
           <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-            <div className="mx-auto w-full max-w-7xl px-3 py-3 sm:px-5 sm:py-5">
+            <div
+              className={cn(
+                "mx-auto w-full max-w-7xl px-3 py-3 sm:px-5 sm:py-5",
+                contentClassName
+              )}
+            >
               {children}
             </div>
           </main>

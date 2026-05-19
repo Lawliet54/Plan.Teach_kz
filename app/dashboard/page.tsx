@@ -15,6 +15,12 @@ import { getCurrentProfile, getRoleHomePath } from "@/lib/auth";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card, CardText, CardTitle } from "@/components/ui/Card";
 import { levelLabels } from "@/lib/types";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  buildLocalAiProfile,
+  getLocalAiSummary,
+  type LocalAiProfile,
+} from "@/lib/local-ai";
 
 const routeItems = [
   {
@@ -54,7 +60,31 @@ export default async function DashboardPage() {
     redirect("/onboarding/interests");
   }
 
-  const interests = await getStudentInterests(profile.id);
+  const supabase = await createSupabaseServerClient();
+  const [{ data: latestResult }, interests] = await Promise.all([
+    supabase
+      .from("diagnostic_results")
+      .select("*")
+      .eq("student_id", profile.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    getStudentInterests(profile.id),
+  ]);
+  const aiProfile =
+    (latestResult?.recommended_route as LocalAiProfile | null)?.parameter_count ===
+    1000
+      ? (latestResult?.recommended_route as LocalAiProfile)
+      : buildLocalAiProfile({
+          profile,
+          totalScore: latestResult?.total_score ?? 0,
+          maxScore: latestResult?.max_score ?? 1,
+          level: profile.level ?? "beginner",
+          gradeScores: latestResult?.grade_scores,
+          strongTopics: (latestResult?.strong_topics as string[] | undefined) ?? [],
+          weakTopics: (latestResult?.weak_topics as string[] | undefined) ?? [],
+          interests: interests.map((interest) => interest.title),
+        });
 
   return (
     <AppShell profile={profile} active="/dashboard">
@@ -160,12 +190,14 @@ export default async function DashboardPage() {
             <Card>
               <div className="mb-2 flex items-center gap-2">
                 <BrainCircuit className="h-4 w-4 text-[#5b4ce6]" />
-                <CardTitle>AI анализ</CardTitle>
+              <CardTitle>AI анализ</CardTitle>
               </div>
               <CardText>
-                Сіз теорияны тез түсінесіз, бірақ есеп шығарғанда өлшем
-                бірліктерді шатастыруыңыз мүмкін.
+                {latestResult?.ai_summary || getLocalAiSummary(aiProfile)}
               </CardText>
+              <Button href="/ai" variant="secondary" className="mt-3 w-full">
+                AI чатқа өту
+              </Button>
             </Card>
 
             <Card>

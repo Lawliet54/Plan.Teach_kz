@@ -3,6 +3,7 @@ import { BrainCircuit, CheckCircle2, TrendingUp } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentProfile, getRoleHomePath } from "@/lib/auth";
 import { getLevelLabel } from "@/lib/diagnostic";
+import { buildLocalAiProfile, type LocalAiProfile } from "@/lib/local-ai";
 import { Button } from "@/components/ui/Button";
 import { Card, CardText, CardTitle } from "@/components/ui/Card";
 
@@ -46,6 +47,20 @@ export default async function DiagnosticResultPage({
   }
 
   const percent = Math.round((result.total_score / result.max_score) * 100);
+  const weakTopics = (result.weak_topics as string[]) || [];
+  const strongTopics = (result.strong_topics as string[]) || [];
+  const aiProfile =
+    (result.recommended_route as LocalAiProfile | null)?.parameter_count === 1000
+      ? (result.recommended_route as LocalAiProfile)
+      : buildLocalAiProfile({
+          profile,
+          totalScore: result.total_score,
+          maxScore: result.max_score,
+          level: result.level,
+          gradeScores: result.grade_scores,
+          strongTopics,
+          weakTopics,
+        });
 
   return (
     <main className="min-h-screen bg-[#f6f7fb] px-4 py-8">
@@ -102,18 +117,41 @@ export default async function DiagnosticResultPage({
             </div>
 
             <CardText>
-              Келесі қадамда осы нәтижеге толық AI талдау қосылады.
+              {result.ai_summary ||
+                `Local AI ${aiProfile.parameter_count} параметрмен бейімделді.`}
             </CardText>
           </Card>
         </div>
+
+        <Card className="mt-4">
+          <CardTitle>Local AI бейімдеу профилі</CardTitle>
+          <div className="mt-3 grid gap-3 md:grid-cols-4">
+            {[
+              ["Параметр", aiProfile.parameter_count],
+              ["Меңгеру", `${aiProfile.mastery_percent}%`],
+              ["Жауап режимі", aiProfile.answer_depth],
+              ["Стиль", aiProfile.learning_style],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-2xl bg-slate-50 p-3">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                  {label}
+                </p>
+                <p className="mt-1 text-sm font-black text-slate-950">{value}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            {aiProfile.tutor_tone}
+          </p>
+        </Card>
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <Card>
             <CardTitle>Мықты жақтар</CardTitle>
 
             <div className="mt-3 flex flex-wrap gap-2">
-              {(result.strong_topics as string[]).length > 0 ? (
-                (result.strong_topics as string[]).map((topic) => (
+              {strongTopics.length > 0 ? (
+                strongTopics.map((topic) => (
                   <span
                     key={topic}
                     className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700"
@@ -133,8 +171,8 @@ export default async function DiagnosticResultPage({
             <CardTitle>Әлсіз тақырыптар</CardTitle>
 
             <div className="mt-3 flex flex-wrap gap-2">
-              {(result.weak_topics as string[]).length > 0 ? (
-                (result.weak_topics as string[]).map((topic) => (
+              {weakTopics.length > 0 ? (
+                weakTopics.map((topic) => (
                   <span
                     key={topic}
                     className="rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700"

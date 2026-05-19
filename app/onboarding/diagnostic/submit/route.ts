@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentProfile, getRoleHomePath } from "@/lib/auth";
 import { getLevelFromScore } from "@/lib/diagnostic";
+import { buildLocalAiProfile, getLocalAiSummary } from "@/lib/local-ai";
 
 function redirectWithError(message: string): never {
   const params = new URLSearchParams({ error: message });
@@ -140,6 +141,15 @@ export async function POST(request: Request) {
     .filter(([, stat]) => stat.total > 0 && stat.correct / stat.total <= 0.4)
     .map(([topic]) => topic)
     .slice(0, 6);
+  const localAiProfile = buildLocalAiProfile({
+    profile,
+    totalScore,
+    maxScore,
+    level,
+    gradeScores,
+    strongTopics,
+    weakTopics,
+  });
 
   const { error: completeAttemptError } = await supabase
     .from("diagnostic_attempts")
@@ -167,8 +177,8 @@ export async function POST(request: Request) {
       grade_scores: gradeScores,
       strong_topics: strongTopics,
       weak_topics: weakTopics,
-      ai_summary: null,
-      recommended_route: [],
+      ai_summary: getLocalAiSummary(localAiProfile),
+      recommended_route: localAiProfile,
     });
 
   if (resultError) {

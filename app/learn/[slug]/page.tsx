@@ -21,6 +21,17 @@ import {
 } from "@/lib/content";
 import { Button } from "@/components/ui/Button";
 import { Card, CardText, CardTitle } from "@/components/ui/Card";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { AiTutor } from "@/components/ai/AiTutor";
+import {
+  buildLocalAiProfile,
+  createLocalTutorReply,
+  type LocalAiProfile,
+} from "@/lib/local-ai";
+import {
+  createOrGetTopicChat,
+  getChatHistoryAction,
+} from "@/app/ai/actions";
 
 type TopicPageProps = {
   params: Promise<{
@@ -68,15 +79,51 @@ export default async function TopicPage({ params }: TopicPageProps) {
     notFound();
   }
 
-  const [contents, objectives, labs, projects] = await Promise.all([
+  const supabase = await createSupabaseServerClient();
+  const [contents, objectives, labs, projects, { data: latestResult }] =
+    await Promise.all([
     getTopicContents(topic.id),
     getTopicObjectives(topic.id),
     getLabs(topic.grade),
     getProjectTasks(topic.grade),
+    supabase
+      .from("diagnostic_results")
+      .select("*")
+      .eq("student_id", profile.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
+
+  // Setup AI Tutor chat
+  const chatData = await createOrGetTopicChat(topic.id, topic.title);
+  const chatMessages = await getChatHistoryAction(chatData.id);
+  
+  // Map TopicContent to AI-friendly format
+  const aiContents = contents.map((c) => ({
+    content_type: c.block_type,
+    content_text: c.body || c.title || "",
+  }));
 
   const relatedLabs = labs.filter((lab) => lab.topic_id === topic.id);
   const relatedProjects = projects.filter((task) => task.topic_id === topic.id);
+  const aiProfile =
+    (latestResult?.recommended_route as LocalAiProfile | null)?.parameter_count ===
+    1000
+      ? (latestResult?.recommended_route as LocalAiProfile)
+      : buildLocalAiProfile({
+          profile,
+          totalScore: latestResult?.total_score ?? 0,
+          maxScore: latestResult?.max_score ?? 1,
+          level: profile.level ?? "beginner",
+          gradeScores: latestResult?.grade_scores,
+          strongTopics: (latestResult?.strong_topics as string[] | undefined) ?? [],
+          weakTopics: (latestResult?.weak_topics as string[] | undefined) ?? [],
+        });
+  const topicTutorReply = createLocalTutorReply({
+    question: `${topic.title} тақырыбын түсіндір`,
+    aiProfile,
+  });
 
   return (
     <AppShell profile={profile} active="/learn">
@@ -220,34 +267,13 @@ export default async function TopicPage({ params }: TopicPageProps) {
             )}
           </Card>
 
-          <Card>
-            <div className="mb-3 flex items-center gap-2">
-              <BrainCircuit className="h-4 w-4 text-[#5b3ee4]" />
-              <CardTitle>AI Tutor</CardTitle>
-            </div>
-
-            <div className="rounded-2xl border border-[#d7e3ff] bg-[#f0edff] p-4">
-              <p className="text-sm font-black text-slate-950">
-                Бұл тақырып бойынша AI көмекші кейін қосылады
-              </p>
-              <p className="mt-1 text-xs leading-5 text-slate-600">
-                AI Tutor оқушы деңгейін, диагностика нәтижесін және осы
-                тақырыптың мақсатын ескеріп жауап береді.
-              </p>
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button className="h-8 rounded-xl border border-[#ddd6ff] bg-white px-3 text-xs font-bold text-[#5b3ee4]">
-                  Қарапайым тілмен түсіндір
-                </button>
-                <button className="h-8 rounded-xl border border-[#ddd6ff] bg-white px-3 text-xs font-bold text-[#5b3ee4]">
-                  Формуламен түсіндір
-                </button>
-                <button className="h-8 rounded-xl border border-[#ddd6ff] bg-white px-3 text-xs font-bold text-[#5b3ee4]">
-                  Тағы мысал келтір
-                </button>
-              </div>
-            </div>
-          </Card>
+          <AiTutor
+            chatId={chatData.id}
+            topicId={topic.id}
+            topicTitle={topic.title}
+            contents={aiContents}
+            initialMessages={chatMessages}
+          />
         </div>
 
         <aside className="space-y-4">
