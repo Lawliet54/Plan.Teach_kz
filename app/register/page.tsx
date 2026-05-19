@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Atom, GraduationCap, UserRound } from "lucide-react";
-import { signUpAction } from "@/app/auth/actions";
 import { AuthMessage } from "@/components/auth/AuthMessage";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -38,7 +37,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
 
           <AuthMessage error={params?.error} success={params?.success} />
 
-          <form action={signUpAction} className="space-y-3">
+          <form action="/register/submit" method="post" className="space-y-3">
             <Input
               id="full_name"
               name="full_name"
