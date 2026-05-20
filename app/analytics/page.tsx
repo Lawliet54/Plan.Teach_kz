@@ -28,7 +28,7 @@ export default async function AnalyticsPage() {
 
   return (
     <AppShell profile={profile} active="/analytics">
-      <StudentAnalyticsPanel />
+      <StudentAnalyticsPanel profileLevel={profile.level} />
     </AppShell>
   );
 }

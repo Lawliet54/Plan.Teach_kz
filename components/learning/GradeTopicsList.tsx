@@ -18,6 +18,7 @@ import {
 
 type GradeTopicsListProps = {
   grade: Grade;
+  profileLevel?: string | null;
 };
 
 function getStatusLabel(state: TopicLearningState) {
@@ -89,12 +90,12 @@ function ProgressBar({ value }: { value: number }) {
   );
 }
 
-export function GradeTopicsList({ grade }: GradeTopicsListProps) {
+export function GradeTopicsList({ grade, profileLevel }: GradeTopicsListProps) {
   const [states, setStates] = useState<TopicLearningState[]>([]);
 
   useEffect(() => {
-    setStates(getGradeLearningStates(grade));
-  }, [grade]);
+    setStates(getGradeLearningStates(grade, profileLevel));
+  }, [grade, profileLevel]);
 
   const completedCount = states.filter(
     (state) => state.status === "completed"

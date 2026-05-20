@@ -37,6 +37,7 @@ type TaskSessionWorkspaceProps = {
   grade: Grade;
   topic: PhysicsTopic;
   level: TopicLevel;
+  profileLevel?: string | null;
   restart?: boolean;
 };
 
@@ -118,6 +119,7 @@ export function TaskSessionWorkspace({
   grade,
   topic,
   level,
+  profileLevel,
   restart = false,
 }: TaskSessionWorkspaceProps) {
   const [session, setSession] = useState<TaskSessionState | null>(null);
@@ -349,6 +351,7 @@ export function TaskSessionWorkspace({
             grade={grade}
             topic={topic}
             level={level}
+            profileLevel={profileLevel}
             session={session}
             onSessionChange={updateSession}
         />

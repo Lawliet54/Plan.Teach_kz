@@ -1,6 +1,11 @@
 export type UserRole = "student" | "teacher" | "admin";
 
-export type StudentLevel = "beginner" | "intermediate" | "advanced";
+export type StudentLevel =
+  | "beginner"
+  | "basic"
+  | "intermediate"
+  | "medium"
+  | "advanced";
 
 export type Profile = {
   id: string;
@@ -35,6 +40,8 @@ export const roleLabels: Record<UserRole, string> = {
 
 export const levelLabels: Record<StudentLevel, string> = {
   beginner: "Бастапқы деңгей",
+  basic: "Бастапқы деңгей",
   intermediate: "Орта деңгей",
+  medium: "Орта деңгей",
   advanced: "Жоғары деңгей",
 };

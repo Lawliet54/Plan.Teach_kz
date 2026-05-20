@@ -1,7 +1,7 @@
 import type { TopicLevel } from "@/data/physicsTopics";
 
 export type AdaptiveDecisionType =
-  | "completed_level_up_next"
+  | "completed_next_higher"
   | "completed_keep_level"
   | "retry_required"
   | "mastered";
@@ -129,12 +129,12 @@ function buildDecision(params: {
     }
 
     return {
-      type: "completed_level_up_next",
+      type: "completed_next_higher",
       currentTopicLevel: level,
       nextTopicLevel: nextLevel,
       isCompleted: true,
       message:
-        "Тақырып сәтті аяқталды. Нәтиже 90%-дан жоғары болғандықтан, келесі тақырып бір деңгей жоғары ашылады.",
+        "Тақырып сәтті аяқталды. Нәтиже 90%-дан жоғары.",
       recommendation:
         `Келесі тақырып ${nextLevel === "medium" ? "орташа" : "күрделі"} деңгейде беріледі.`,
     };
@@ -146,8 +146,7 @@ function buildDecision(params: {
       currentTopicLevel: level,
       nextTopicLevel: level,
       isCompleted: true,
-      message:
-        "Тақырып аяқталды. Нәтиже жеткілікті, бірақ деңгей көтерілмейді.",
+      message: "Тақырып аяқталды. Нәтиже жеткілікті.",
       recommendation:
         "Келесі тақырып осы деңгейде беріледі. Формула мен негізгі ұғымдарды бекіту ұсынылады.",
     };

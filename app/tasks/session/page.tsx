@@ -9,6 +9,7 @@ import {
 } from "@/data/physicsTopics";
 import { TaskSessionWorkspace } from "@/components/learning/TaskSessionWorkspace";
 import { LearningAccessGuard } from "@/components/learning/LearningAccessGuard";
+import { normalizeProfileLevel } from "@/lib/learningProgress";
 
 type PageProps = {
   searchParams: Promise<{
@@ -36,7 +37,6 @@ export default async function TaskSessionPage({ searchParams }: PageProps) {
 
   const grade = Number(gradeParam) as Grade;
   const topic = getTopicBySlug(grade, topicSlug);
-  const level: TopicLevel = isValidLevel(levelParam) ? levelParam : "basic";
   const restart = params.restart === "1";
 
   if (!topic) {
@@ -65,6 +65,10 @@ export default async function TaskSessionPage({ searchParams }: PageProps) {
     redirect("/onboarding/interests");
   }
 
+  const level: TopicLevel = isValidLevel(levelParam)
+    ? levelParam
+    : normalizeProfileLevel(profile.level);
+
   return (
     <AppShell profile={profile} active="/topics">
         <LearningAccessGuard
@@ -72,11 +76,13 @@ export default async function TaskSessionPage({ searchParams }: PageProps) {
         topicSlug={topic.slug}
         level={level}
         mode="task"
+        profileLevel={profile.level}
         >
         <TaskSessionWorkspace
             grade={grade}
             topic={topic}
             level={level}
+            profileLevel={profile.level}
             restart={restart}
         />
         </LearningAccessGuard>

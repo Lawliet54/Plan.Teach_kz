@@ -33,6 +33,7 @@ type ResultTaskStepProps = {
   grade: Grade;
   topic: PhysicsTopic;
   level: TopicLevel;
+  profileLevel?: string | null;
   session: TaskSessionState;
   onSessionChange: (session: TaskSessionState) => void;
 };
@@ -83,6 +84,7 @@ export function ResultTaskStep({
   grade,
   topic,
   level,
+  profileLevel,
   session,
   onSessionChange,
 }: ResultTaskStepProps) {
@@ -144,8 +146,8 @@ export function ResultTaskStep({
   const nextTarget = useMemo(() => {
     if (!result || result.percent < 70) return null;
 
-    return getNextTopicTargetInGrade(grade);
-  }, [grade, result]);
+    return getNextTopicTargetInGrade(grade, profileLevel);
+  }, [grade, profileLevel, result]);
 
   if (!result) {
     return (

@@ -146,7 +146,7 @@ export default async function DashboardPage() {
               </p>
             </div>
 
-            <ContinueLearningButton />
+            <ContinueLearningButton profileLevel={profile.level} />
           </div>
         </section>
 
@@ -198,7 +198,7 @@ export default async function DashboardPage() {
           })}
         </div>
 
-        <LearningRouteOverview />
+        <LearningRouteOverview profileLevel={profile.level} />
 
         <div className="grid gap-3 lg:grid-cols-[1.35fr_0.75fr]">
           <Card>
@@ -249,13 +249,13 @@ export default async function DashboardPage() {
             <Card>
               <div className="mb-2 flex items-center gap-2">
                 <Layers3 className="h-4 w-4 text-[#5b4ce6]" />
-                <CardTitle>Adaptive логика</CardTitle>
+                <CardTitle>Оқу бағыты</CardTitle>
               </div>
 
               <div className="space-y-2 text-xs leading-5 text-slate-600">
                 <p>
-                  Егер оқушы 3 тапсырманы қатарынан жақсы орындаса, жүйе
-                  тақырып пен тапсырма деңгейін көтереді.
+                  Әр тақырып оқушының диагностика нәтижесіне сай деңгейден
+                  басталады және келесі тақырып алдыңғы нәтижеге қарай ашылады.
                 </p>
 
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 font-bold text-slate-800">
@@ -263,8 +263,8 @@ export default async function DashboardPage() {
                 </div>
 
                 <p>
-                  Егер қате көп болса, деңгей көтерілмейді. AI қосымша
-                  түсіндіру, мысал және ұқсас тапсырма ұсынады.
+                  Келесі тақырыпты ашу үшін қазіргі тақырыпты кемінде 70%
+                  нәтижемен аяқтау қажет.
                 </p>
               </div>
             </Card>

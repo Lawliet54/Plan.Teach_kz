@@ -206,7 +206,13 @@ function buildAiAdvice(items: TaskResultHistoryItem[]) {
   };
 }
 
-export function StudentAnalyticsPanel() {
+type StudentAnalyticsPanelProps = {
+  profileLevel?: string | null;
+};
+
+export function StudentAnalyticsPanel({
+  profileLevel,
+}: StudentAnalyticsPanelProps) {
   const [items, setItems] = useState<TaskResultHistoryItem[]>([]);
   const [continueTarget, setContinueTarget] = useState<ReturnType<
     typeof getContinueLearningTarget
@@ -214,8 +220,8 @@ export function StudentAnalyticsPanel() {
 
   useEffect(() => {
     setItems(readTaskResultHistory());
-    setContinueTarget(getContinueLearningTarget());
-  }, []);
+    setContinueTarget(getContinueLearningTarget(profileLevel));
+  }, [profileLevel]);
 
   const sortedItems = useMemo(() => {
     return [...items].sort(

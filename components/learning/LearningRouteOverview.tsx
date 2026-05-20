@@ -65,9 +65,9 @@ function getActionLabel(state: TopicLearningState) {
   return "Бастау";
 }
 
-function buildSnapshot(): RouteSnapshot | null {
-  const target = getContinueLearningTarget();
-  const states = getGradeLearningStates(target.topic.grade);
+function buildSnapshot(profileLevel?: string | null): RouteSnapshot | null {
+  const target = getContinueLearningTarget(profileLevel);
+  const states = getGradeLearningStates(target.topic.grade, profileLevel);
 
   const current =
     states.find((state) => state.topic.id === target.topic.id) ??
@@ -125,12 +125,18 @@ function TopicProgressLine({
   );
 }
 
-export function LearningRouteOverview() {
+type LearningRouteOverviewProps = {
+  profileLevel?: string | null;
+};
+
+export function LearningRouteOverview({
+  profileLevel,
+}: LearningRouteOverviewProps) {
   const [snapshot, setSnapshot] = useState<RouteSnapshot | null>(null);
 
   useEffect(() => {
-    setSnapshot(buildSnapshot());
-  }, []);
+    setSnapshot(buildSnapshot(profileLevel));
+  }, [profileLevel]);
 
   if (!snapshot) {
     return null;

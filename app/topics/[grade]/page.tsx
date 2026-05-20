@@ -103,7 +103,7 @@ export default async function GradeTopicsPage({ params }: PageProps) {
           </p>
         </section>
 
-        <GradeTopicsList grade={grade} />
+        <GradeTopicsList grade={grade} profileLevel={profile.level} />
       </div>
     </AppShell>
   );

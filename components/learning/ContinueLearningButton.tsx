@@ -5,13 +5,19 @@ import { PlayCircle } from "lucide-react";
 import Link from "next/link";
 import { getContinueLearningTarget } from "@/lib/learningProgress";
 
-export function ContinueLearningButton() {
+type ContinueLearningButtonProps = {
+  profileLevel?: string | null;
+};
+
+export function ContinueLearningButton({
+  profileLevel,
+}: ContinueLearningButtonProps) {
   const [href, setHref] = useState("/topics");
 
   useEffect(() => {
-    const target = getContinueLearningTarget();
+    const target = getContinueLearningTarget(profileLevel);
     setHref(target.href);
-  }, []);
+  }, [profileLevel]);
 
   return (
     <Link

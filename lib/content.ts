@@ -241,13 +241,13 @@ export type TopicLevel = "beginner" | "intermediate" | "advanced";
 
 export function normalizeStudentLevel(level?: string | null): TopicLevel {
   if (level === "advanced") return "advanced";
-  if (level === "intermediate") return "intermediate";
+  if (level === "intermediate" || level === "medium") return "intermediate";
   return "beginner";
 }
 
 export function getStudentLevelLabel(level?: string | null) {
   if (level === "advanced") return "Жоғары деңгей";
-  if (level === "intermediate") return "Орта деңгей";
+  if (level === "intermediate" || level === "medium") return "Орта деңгей";
   return "Бастапқы деңгей";
 }
 

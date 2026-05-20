@@ -14,6 +14,7 @@ type LearningAccessGuardProps = {
   topicSlug: string;
   level: TopicLevel;
   mode: LearningAccessMode;
+  profileLevel?: string | null;
   children: ReactNode;
 };
 
@@ -22,17 +23,21 @@ export function LearningAccessGuard({
   topicSlug,
   level,
   mode,
+  profileLevel,
   children,
 }: LearningAccessGuardProps) {
   const router = useRouter();
   const [canShow, setCanShow] = useState(false);
 
   useEffect(() => {
+    setCanShow(false);
+
     const redirect = getLearningAccessRedirect({
       grade,
       topicSlug,
       requestedLevel: level,
       mode,
+      initialLevel: profileLevel,
     });
 
     if (redirect) {
@@ -41,7 +46,7 @@ export function LearningAccessGuard({
     }
 
     setCanShow(true);
-  }, [grade, topicSlug, level, mode, router]);
+  }, [grade, topicSlug, level, mode, profileLevel, router]);
 
   if (!canShow) {
     return (

@@ -23,6 +23,7 @@ import {
 } from "@/data/physicsTopics";
 import { LearningAccessGuard } from "@/components/learning/LearningAccessGuard";
 import { TopicAiAskBox } from "@/components/learning/TopicAiAskBox";
+import { normalizeProfileLevel } from "@/lib/learningProgress";
 
 
 type PageProps = {
@@ -34,12 +35,6 @@ type PageProps = {
     level?: string;
   }>;
 };
-
-function getStudentTopicLevel(profileLevel?: string | null): TopicLevel {
-  if (profileLevel === "advanced") return "advanced";
-  if (profileLevel === "intermediate") return "medium";
-  return "basic";
-}
 
 function isValidTopicLevel(value?: string): value is TopicLevel {
   return value === "basic" || value === "medium" || value === "advanced";
@@ -99,7 +94,7 @@ export default async function TopicDetailPage({
 
   const currentLevel = isValidTopicLevel(query.level)
     ? query.level
-    : getStudentTopicLevel(profile.level);
+    : normalizeProfileLevel(profile.level);
 
   const content = topic.levels[currentLevel];
 
@@ -110,6 +105,7 @@ export default async function TopicDetailPage({
         topicSlug={topic.slug}
         level={currentLevel}
         mode="topic"
+        profileLevel={profile.level}
       >
         <div className="mx-auto max-w-4xl space-y-3 sm:space-y-4">
           <section className="rounded-[10px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">

@@ -39,6 +39,23 @@ function isBrowser() {
   return typeof window !== "undefined";
 }
 
+export function normalizeProfileLevel(
+  profileLevel?: string | null
+): TopicLevel {
+  if (profileLevel === "advanced") return "advanced";
+  if (profileLevel === "intermediate" || profileLevel === "medium") {
+    return "medium";
+  }
+
+  return "basic";
+}
+
+export function resolveInitialTopicLevel(
+  profileLevel?: string | null
+): TopicLevel {
+  return normalizeProfileLevel(profileLevel);
+}
+
 function getTopicProgress(
   grade: number,
   topicSlug: string
@@ -75,11 +92,14 @@ export function getTaskSessionHref(topic: PhysicsTopic, level: TopicLevel) {
   return `/tasks/session?grade=${topic.grade}&topic=${topic.slug}&level=${level}`;
 }
 
-export function getGradeLearningStates(grade: Grade): TopicLearningState[] {
+export function getGradeLearningStates(
+  grade: Grade,
+  initialLevel?: string | null
+): TopicLearningState[] {
   const topics = getTopicsByGrade(grade);
 
   let previousCompleted = true;
-  let nextLevel: TopicLevel = "basic";
+  let nextLevel = resolveInitialTopicLevel(initialLevel);
 
   return topics.map((topic, index) => {
     const progress = getTopicProgress(topic.grade, topic.slug);
@@ -129,9 +149,10 @@ export function getGradeLearningStates(grade: Grade): TopicLearningState[] {
 }
 
 export function getFirstCurrentTopicState(
-  grade: Grade
+  grade: Grade,
+  initialLevel?: string | null
 ): TopicLearningState | null {
-  const states = getGradeLearningStates(grade);
+  const states = getGradeLearningStates(grade, initialLevel);
 
   return (
     states.find((state) => state.status === "current") ??
@@ -141,13 +162,16 @@ export function getFirstCurrentTopicState(
   );
 }
 
-export function getContinueLearningTarget(): ContinueLearningTarget {
+export function getContinueLearningTarget(
+  initialLevel?: string | null
+): ContinueLearningTarget {
   const firstTopic = physicsTopics[0];
+  const fallbackLevel = resolveInitialTopicLevel(initialLevel);
 
   const fallback: ContinueLearningTarget = {
     topic: firstTopic,
-    level: "basic",
-    href: getTopicHref(firstTopic, "basic"),
+    level: fallbackLevel,
+    href: getTopicHref(firstTopic, fallbackLevel),
     label: firstTopic.title,
     description: `${firstTopic.grade}-сынып · алғашқы тақырып`,
   };
@@ -155,7 +179,7 @@ export function getContinueLearningTarget(): ContinueLearningTarget {
   if (!isBrowser()) return fallback;
 
   for (const grade of [7, 8, 9, 10, 11] as Grade[]) {
-    const states = getGradeLearningStates(grade);
+    const states = getGradeLearningStates(grade, initialLevel);
     const current = states.find((state) => state.status === "current");
 
     if (current) {
@@ -176,9 +200,10 @@ export function getContinueLearningTarget(): ContinueLearningTarget {
 }
 
 export function getNextTopicTargetInGrade(
-  grade: Grade
+  grade: Grade,
+  initialLevel?: string | null
 ): ContinueLearningTarget | null {
-  const states = getGradeLearningStates(grade);
+  const states = getGradeLearningStates(grade, initialLevel);
   const current = states.find((state) => state.status === "current");
 
   if (!current) return null;
@@ -204,17 +229,19 @@ export type LearningAccessRedirect = {
 
 export function getTopicStateBySlug(
   grade: Grade,
-  topicSlug: string
+  topicSlug: string,
+  initialLevel?: string | null
 ): TopicLearningState | null {
-  const states = getGradeLearningStates(grade);
+  const states = getGradeLearningStates(grade, initialLevel);
 
   return states.find((state) => state.topic.slug === topicSlug) ?? null;
 }
 
 export function getCurrentTopicStateInGrade(
-  grade: Grade
+  grade: Grade,
+  initialLevel?: string | null
 ): TopicLearningState | null {
-  const states = getGradeLearningStates(grade);
+  const states = getGradeLearningStates(grade, initialLevel);
 
   return (
     states.find((state) => state.status === "current") ??
@@ -240,8 +267,13 @@ export function getLearningAccessRedirect(params: {
   topicSlug: string;
   requestedLevel: TopicLevel;
   mode: LearningAccessMode;
+  initialLevel?: string | null;
 }): LearningAccessRedirect | null {
-  const requestedState = getTopicStateBySlug(params.grade, params.topicSlug);
+  const requestedState = getTopicStateBySlug(
+    params.grade,
+    params.topicSlug,
+    params.initialLevel
+  );
 
   if (!requestedState) {
     return {
@@ -250,7 +282,10 @@ export function getLearningAccessRedirect(params: {
     };
   }
 
-  const currentState = getCurrentTopicStateInGrade(params.grade);
+  const currentState = getCurrentTopicStateInGrade(
+    params.grade,
+    params.initialLevel
+  );
 
   if (requestedState.status === "locked") {
     return {
