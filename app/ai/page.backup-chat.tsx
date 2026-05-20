@@ -1,10 +1,20 @@
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { getCurrentProfile, getRoleHomePath } from "@/lib/auth";
-import { ResultsHistoryPanel } from "@/components/learning/ResultsHistoryPanel";
+import { AdaptiveAiTutor } from "@/components/learning/AdaptiveAiTutor";
 
-export default async function ResultsPage() {
+type AiPageProps = {
+  searchParams?: Promise<{
+    grade?: string;
+    topic?: string;
+    level?: string;
+    q?: string;
+  }>;
+};
+
+export default async function AiPage({ searchParams }: AiPageProps) {
   const profile = await getCurrentProfile();
+  const params = await searchParams;
 
   if (!profile) {
     redirect("/login");
@@ -27,8 +37,12 @@ export default async function ResultsPage() {
   }
 
   return (
-    <AppShell profile={profile} active="/results">
-      <ResultsHistoryPanel />
+    <AppShell profile={profile} active="/ai">
+      <AdaptiveAiTutor
+        initialGrade={params?.grade}
+        initialTopicSlug={params?.topic}
+        initialLevel={params?.level}
+      />
     </AppShell>
   );
 }

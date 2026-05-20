@@ -7,13 +7,15 @@ import {
   type Grade,
   type TopicLevel,
 } from "@/data/physicsTopics";
-import { AdaptiveTopicTasks } from "@/components/learning/AdaptiveTopicTasks";
+import { TaskSessionWorkspace } from "@/components/learning/TaskSessionWorkspace";
+import { LearningAccessGuard } from "@/components/learning/LearningAccessGuard";
 
 type PageProps = {
   searchParams: Promise<{
     grade?: string;
     topic?: string;
     level?: string;
+    restart?: string;
   }>;
 };
 
@@ -21,7 +23,7 @@ function isValidLevel(value?: string): value is TopicLevel {
   return value === "basic" || value === "medium" || value === "advanced";
 }
 
-export default async function TasksPage({ searchParams }: PageProps) {
+export default async function TaskSessionPage({ searchParams }: PageProps) {
   const params = await searchParams;
 
   const gradeParam = params.grade;
@@ -33,8 +35,9 @@ export default async function TasksPage({ searchParams }: PageProps) {
   }
 
   const grade = Number(gradeParam) as Grade;
-  const level: TopicLevel = isValidLevel(levelParam) ? levelParam : "basic";
   const topic = getTopicBySlug(grade, topicSlug);
+  const level: TopicLevel = isValidLevel(levelParam) ? levelParam : "basic";
+  const restart = params.restart === "1";
 
   if (!topic) {
     notFound();
@@ -63,8 +66,20 @@ export default async function TasksPage({ searchParams }: PageProps) {
   }
 
   return (
-    <AppShell profile={profile} active="/tasks">
-      <AdaptiveTopicTasks grade={grade} topic={topic} level={level} />
+    <AppShell profile={profile} active="/topics">
+        <LearningAccessGuard
+        grade={grade}
+        topicSlug={topic.slug}
+        level={level}
+        mode="task"
+        >
+        <TaskSessionWorkspace
+            grade={grade}
+            topic={topic}
+            level={level}
+            restart={restart}
+        />
+        </LearningAccessGuard>
     </AppShell>
   );
 }

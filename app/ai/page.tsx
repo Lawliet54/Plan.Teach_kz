@@ -1,76 +1,73 @@
 import { redirect } from "next/navigation";
-import { AiChatClient } from "@/components/ai/AiChatClient";
 import { AppShell } from "@/components/layout/AppShell";
-import { getCurrentProfile } from "@/lib/auth";
+import { getCurrentProfile, getRoleHomePath } from "@/lib/auth";
+import { AiChatWorkspace } from "@/components/learning/AiChatWorkspace";
 import { getStudentInterests } from "@/lib/interests";
-import {
-  buildLocalAiProfile,
-  type LocalAiProfile,
-} from "@/lib/local-ai";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-type AiPageProps = {
-  searchParams?: Promise<{
+type PageProps = {
+  searchParams: Promise<{
+    grade?: string;
+    topic?: string;
+    level?: string;
     q?: string;
   }>;
 };
 
-export default async function AiPage({ searchParams }: AiPageProps) {
-  const params = await searchParams;
+export default async function AiPage({ searchParams }: PageProps) {
   const profile = await getCurrentProfile();
+  const params = await searchParams;
 
-  if (!profile) redirect("/login");
-  if (profile.role === "student" && !profile.teacher_id) {
+  if (!profile) {
+    redirect("/login");
+  }
+
+  if (profile.role !== "student") {
+    redirect(getRoleHomePath(profile.role));
+  }
+
+  if (!profile.teacher_id) {
     redirect("/onboarding/teacher-select");
   }
-  if (profile.role === "student" && !profile.diagnostic_completed) {
+
+  if (!profile.diagnostic_completed) {
     redirect("/onboarding/diagnostic");
   }
-  if (profile.role === "student" && !profile.onboarding_completed) {
+
+  if (!profile.onboarding_completed) {
     redirect("/onboarding/interests");
   }
 
   const supabase = await createSupabaseServerClient();
-  const [{ data: latestResult }, interests] =
-    profile.role === "student"
-      ? await Promise.all([
-          supabase
-            .from("diagnostic_results")
-            .select("*")
-            .eq("student_id", profile.id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle(),
-          getStudentInterests(profile.id),
-        ])
-      : [{ data: null }, []];
-  const aiProfile =
-    (latestResult?.recommended_route as LocalAiProfile | null)?.parameter_count ===
-    1000
-      ? (latestResult?.recommended_route as LocalAiProfile)
-      : buildLocalAiProfile({
-          profile,
-          totalScore: latestResult?.total_score ?? 0,
-          maxScore: latestResult?.max_score ?? 1,
-          level: profile.level ?? "beginner",
-          gradeScores: latestResult?.grade_scores,
-          strongTopics: (latestResult?.strong_topics as string[] | undefined) ?? [],
-          weakTopics: (latestResult?.weak_topics as string[] | undefined) ?? [],
-          interests: interests.map((interest) => interest.title),
-        });
+
+  const [{ data: latestResult }, interests] = await Promise.all([
+    supabase
+      .from("diagnostic_results")
+      .select("*")
+      .eq("student_id", profile.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    getStudentInterests(profile.id),
+  ]);
 
   return (
-    <AppShell
-      profile={profile}
-      active="/ai"
-      hideTopbar
-      contentClassName="h-full max-w-none p-0 sm:p-0"
-    >
-      <AiChatClient
-        aiProfile={aiProfile}
-        displayName={profile.full_name || "Оқушы"}
-        storageKey={`plan-teach-ai-chats:${profile.id}`}
-        initialQuestion={params?.q}
+    <AppShell profile={profile} active="/ai">
+      <AiChatWorkspace
+        initialGrade={params.grade}
+        initialTopicSlug={params.topic}
+        initialLevel={params.level}
+        initialQuestion={params.q}
+        studentContext={{
+          studentName: profile.full_name,
+          profileLevel: profile.level,
+          interests: interests.map((interest) => interest.title),
+          diagnosticSummary: latestResult?.ai_summary ?? null,
+          strongTopics:
+            (latestResult?.strong_topics as string[] | null | undefined) ?? [],
+          weakTopics:
+            (latestResult?.weak_topics as string[] | null | undefined) ?? [],
+        }}
       />
     </AppShell>
   );

@@ -72,10 +72,7 @@ function NavIcon({
 
 const studentNav: NavItem[] = [
   { href: "/dashboard", label: "Басты бет", icon: Home },
-  { href: "/learn", label: "Тақырыптар", icon: BookOpen },
-  { href: "/tasks", label: "Тапсырмалар", icon: ClipboardCheck },
-  { href: "/labs", label: "Симуляциялар", icon: FlaskConical },
-  { href: "/tests", label: "Тесттер", icon: ClipboardCheck },
+  { href: "/topics", label: "Тақырыптар", icon: BookOpen },
   { href: "/results", label: "Нәтижелер", icon: LineChart },
   { href: "/analytics", label: "Аналитика", icon: BarChart3 },
   { href: "/ai", label: "AI көмекші", icon: MessageCircle },

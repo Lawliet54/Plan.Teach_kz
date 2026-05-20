@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { getCurrentProfile, getRoleHomePath } from "@/lib/auth";
-import { ResultsHistoryPanel } from "@/components/learning/ResultsHistoryPanel";
+import { GradeSelectionGrid } from "@/components/learning/GradeSelectionGrid";
 
-export default async function ResultsPage() {
+export default async function TopicsPage() {
   const profile = await getCurrentProfile();
 
   if (!profile) {
@@ -27,8 +27,10 @@ export default async function ResultsPage() {
   }
 
   return (
-    <AppShell profile={profile} active="/results">
-      <ResultsHistoryPanel />
+    <AppShell profile={profile} active="/topics">
+      <div className="space-y-3 sm:space-y-4">
+        <GradeSelectionGrid />
+      </div>
     </AppShell>
   );
 }
