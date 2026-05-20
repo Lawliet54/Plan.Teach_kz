@@ -1,4 +1,7 @@
 import {
+  getContentExampleText,
+  getContentRememberItems,
+  getFormulaExpression,
   physicsTopics,
   type PhysicsTopic,
   type TopicLevel,
@@ -303,9 +306,12 @@ function buildTopicAnswer(question: string, topic: PhysicsTopic, level: TopicLev
   ]);
 
   const parts: string[] = [];
+  const formula = getFormulaExpression(content.formula);
+  const example = getContentExampleText(content);
+  const rememberItems = getContentRememberItems(content);
 
-  if (asksFormula && content.formula) {
-    parts.push(`Формула: ${content.formula}`);
+  if (asksFormula && formula) {
+    parts.push(`Формула: ${formula}`);
     parts.push("");
     parts.push("Қолдану тәртібі:");
     parts.push("1. Берілген шамаларды жаз.");
@@ -317,7 +323,7 @@ function buildTopicAnswer(question: string, topic: PhysicsTopic, level: TopicLev
 
   if (asksExample) {
     parts.push("Мысал:");
-    parts.push(content.example);
+    parts.push(example);
     parts.push("");
   }
 
@@ -329,14 +335,14 @@ function buildTopicAnswer(question: string, topic: PhysicsTopic, level: TopicLev
     parts.push(getSimplePhysicsAnalogy(topic));
     parts.push("");
     parts.push("Есте сақтау керек:");
-    content.keyPoints.forEach((point, index) => {
+    rememberItems.forEach((point, index) => {
       parts.push(`${index + 1}. ${point}`);
     });
     parts.push("");
   }
 
-  if (content.formula && !asksFormula) {
-    parts.push(`Негізгі формула: ${content.formula}`);
+  if (formula && !asksFormula) {
+    parts.push(`Негізгі формула: ${formula}`);
     parts.push("");
   }
 

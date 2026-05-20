@@ -1,4 +1,9 @@
-import type { PhysicsTopic, TopicLevel } from "@/data/physicsTopics";
+import {
+  getContentRememberItems,
+  getFormulaExpression,
+  type PhysicsTopic,
+  type TopicLevel,
+} from "@/data/physicsTopics";
 
 export type TestQuestion = {
   id: string;
@@ -231,7 +236,9 @@ export function getTestQuestions(
   }
 
   const formulaAnswer =
-    content.formula ?? "Негізгі ұғымды түсініп, оны мысалмен байланыстыру.";
+    getFormulaExpression(content.formula) ??
+    "Негізгі ұғымды түсініп, оны мысалмен байланыстыру.";
+  const rememberItems = getContentRememberItems(content);
 
   return [
     makeQuestion({
@@ -244,7 +251,7 @@ export function getTestQuestions(
     makeQuestion({
       id: `${topic.slug}-test-2`,
       question: "Бұл тақырыптағы ең маңызды ой қайсы?",
-      correct: content.keyPoints[0] ?? content.shortGoal,
+      correct: rememberItems[0] ?? content.shortGoal,
       distractors: getCommonDistractors(),
       explanation: "Негізгі ойды түсінбей есеп шығару қиын болады.",
     }),

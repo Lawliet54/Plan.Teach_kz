@@ -1,4 +1,8 @@
-import type { PhysicsTopic, TopicLevel } from "@/data/physicsTopics";
+import {
+  getContentRememberItems,
+  type PhysicsTopic,
+  type TopicLevel,
+} from "@/data/physicsTopics";
 
 export type FillBlankQuestion = {
   id: string;
@@ -161,6 +165,9 @@ export function getFillBlankQuestions(
     return getSpeedFillTasks(topic.slug);
   }
 
+  const rememberItems = getContentRememberItems(content);
+  const mainPoint = rememberItems[0] ?? content.shortGoal;
+
   return [
     makeFill({
       id: `${topic.slug}-fill-1`,
@@ -179,9 +186,9 @@ export function getFillBlankQuestions(
       id: `${topic.slug}-fill-2`,
       before: "Бұл тақырыптағы негізгі ой:",
       after: ".",
-      correctAnswer: content.keyPoints[0] ?? content.shortGoal,
+      correctAnswer: mainPoint,
       wordBank: [
-        content.keyPoints[0] ?? content.shortGoal,
+        mainPoint,
         "формула қолданылмайды",
         "өлшем бірлік болмайды",
         "физика есеппен байланысты емес",

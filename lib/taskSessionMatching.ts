@@ -1,4 +1,9 @@
-import type { PhysicsTopic, TopicLevel } from "@/data/physicsTopics";
+import {
+  getContentExampleText,
+  getFormulaExpression,
+  type PhysicsTopic,
+  type TopicLevel,
+} from "@/data/physicsTopics";
 
 export type MatchingTerm = {
   id: string;
@@ -18,6 +23,9 @@ export type MatchingTask = {
 
 function makeGenericMatchingTask(topic: PhysicsTopic, level: TopicLevel): MatchingTask {
   const content = topic.levels[level];
+  const formula =
+    getFormulaExpression(content.formula) ??
+    "Бұл тақырыпта негізгі ұғымдар мен байланыстар қолданылады.";
 
   return {
     terms: [
@@ -51,12 +59,12 @@ function makeGenericMatchingTask(topic: PhysicsTopic, level: TopicLevel): Matchi
       },
       {
         id: "def-formula",
-        label: content.formula ?? "Бұл тақырыпта негізгі ұғымдар мен байланыстар қолданылады.",
+        label: formula,
         correctTermId: "formula",
       },
       {
         id: "def-example",
-        label: content.example,
+        label: getContentExampleText(content),
         correctTermId: "example",
       },
     ],
