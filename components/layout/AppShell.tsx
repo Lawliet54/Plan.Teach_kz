@@ -15,6 +15,7 @@ import {
   LogOut,
   Menu,
   MessageCircle,
+  PlayCircle,
   Settings,
   ShieldCheck,
   User,
@@ -73,6 +74,8 @@ function NavIcon({
 const studentNav: NavItem[] = [
   { href: "/dashboard", label: "Басты бет", icon: Home },
   { href: "/topics", label: "Тақырыптар", icon: BookOpen },
+  { href: "/labs", label: "Зертханалар", icon: FlaskConical },
+  { href: "/videos", label: "Видео сабақтар", icon: PlayCircle },
   { href: "/results", label: "Нәтижелер", icon: LineChart },
   { href: "/analytics", label: "Аналитика", icon: BarChart3 },
   { href: "/ai", label: "AI көмекші", icon: MessageCircle },
@@ -185,10 +188,7 @@ export function AppShell({
                   const isActive =
                     active === item.href ||
                     pathname === item.href ||
-                    (item.href !== "/dashboard" &&
-                      item.href !== "/teacher/dashboard" &&
-                      item.href !== "/admin/dashboard" &&
-                      pathname.startsWith(item.href));
+                    pathname.startsWith(`${item.href}/`);
 
                   return (
                     <Link
