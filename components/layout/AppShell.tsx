@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -70,9 +70,12 @@ const teacherNav: NavItem[] = [
 
 const adminNav: NavItem[] = [
   { href: "/admin/dashboard", label: "Админ панель", icon: ShieldCheck },
-  { href: "/teacher/dashboard", label: "Мұғалім көрінісі", icon: UsersRound },
-  { href: "/learn", label: "Контент", icon: BookOpen },
-  { href: "/analytics", label: "Аналитика", icon: BarChart3 },
+  { href: "/admin/pages", label: "Барлық беттер", icon: BookOpen },
+  { href: "/teacher/dashboard", label: "Мұғалім: басты бет", icon: Home },
+  { href: "/teacher/students", label: "Мұғалім: оқушылар", icon: UsersRound },
+  { href: "/teacher/submissions", label: "Мұғалім: тексеру", icon: ClipboardCheck },
+  { href: "/teacher/analytics", label: "Мұғалім: аналитика", icon: BarChart3 },
+  { href: "/teacher/controls", label: "Мұғалім: БЖБ / ТЖБ", icon: BookOpen },
   { href: "/profile", label: "Жеке кабинет", icon: Settings },
 ];
 
@@ -147,7 +150,7 @@ function Sidebar({
           {!collapsed || mobile ? (
             <span className="min-w-0">
               <b className="block truncate text-sm tracking-[-.02em]">Plan.Teach_kz</b>
-              <span className="block truncate text-[9px] font-black uppercase tracking-[.14em] text-white/45">Physics OS</span>
+              <span className="block truncate text-[9px] font-black uppercase tracking-[.14em] text-white/45">AI Physics Lab</span>
             </span>
           ) : null}
         </Link>
@@ -224,7 +227,7 @@ export function AppShell({ profile, active, children, hideTopbar = false, conten
   }
 
   return (
-    <div className="min-h-dvh bg-[var(--app-bg)] text-[var(--text)]">
+    <div className="app-soft-text min-h-dvh bg-[var(--app-bg)] text-[var(--text)]">
       {drawer ? (
         <>
           <button aria-label="Мәзірді жабу" className="fixed inset-0 z-40 bg-[#071522]/55 lg:hidden" onClick={() => setDrawer(false)} />
@@ -287,3 +290,6 @@ export function AppShell({ profile, active, children, hideTopbar = false, conten
     </div>
   );
 }
+
+
+

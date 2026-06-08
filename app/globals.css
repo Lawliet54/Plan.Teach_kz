@@ -133,3 +133,217 @@ input, select, textarea { min-width: 0; }
   .compact-container { width: min(1220px, calc(100% - 34px)); }
   .page-stack { gap: 16px; }
 }
+
+/* ===== AI PHYSICS LAB SAFE REDESIGN START ===== */
+
+:root {
+  --app-bg: #f7f7fc;
+  --surface: #ffffff;
+  --surface-muted: #f7f8fc;
+  --surface-soft: #fbfbfe;
+  --surface-dark: #11152f;
+  --panel: var(--surface);
+
+  --text: #17182d;
+  --text-soft: #41455f;
+  --text-muted: #7a7f99;
+  --muted: var(--text-muted);
+
+  --border: #e6e7f0;
+  --border-soft: #f0f1f6;
+  --border-accent: rgba(101, 86, 229, 0.24);
+
+  --navy: #17172f;
+  --navy-2: #222348;
+  --sidebar: #17172f;
+  --sidebar-2: #202149;
+
+  --purple: #6556e5;
+  --purple-2: #5142cf;
+  --purple-soft: #f1efff;
+
+  --blue: #3478e5;
+  --blue-soft: #eef5ff;
+
+  --primary: #6556e5;
+  --primary-2: #5142cf;
+
+  --green: #269763;
+  --green-soft: #effbf5;
+  --red: #d24f5d;
+  --red-soft: #fff2f4;
+  --yellow: #c98622;
+  --yellow-soft: #fff8ea;
+
+  --radius-xs: 5px;
+  --radius-sm: 8px;
+  --radius-md: 11px;
+  --radius-lg: 15px;
+
+  --shadow-xs: 0 1px 2px rgba(30, 32, 65, 0.035);
+  --shadow-sm: 0 7px 20px rgba(30, 32, 65, 0.055);
+  --shadow-hover: 0 18px 44px rgba(30, 32, 65, 0.1);
+}
+
+body {
+  background:
+    radial-gradient(circle at 82% -8%, rgba(112, 94, 230, 0.1), transparent 24rem),
+    radial-gradient(circle at 8% 102%, rgba(52, 120, 229, 0.075), transparent 22rem),
+    var(--app-bg);
+}
+
+.app-sidebar {
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% -2%, rgba(120, 102, 255, 0.52), transparent 14rem),
+    radial-gradient(circle at 100% 56%, rgba(52, 120, 229, 0.16), transparent 17rem),
+    linear-gradient(180deg, var(--sidebar) 0%, var(--sidebar-2) 100%);
+}
+
+.app-sidebar::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.84), transparent 72%);
+}
+
+.app-sidebar::after {
+  position: absolute;
+  right: -90px;
+  bottom: -100px;
+  z-index: 0;
+  width: 220px;
+  height: 220px;
+  content: "";
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  box-shadow:
+    0 0 0 32px rgba(255, 255, 255, 0.02),
+    0 0 0 64px rgba(255, 255, 255, 0.016);
+}
+
+.app-sidebar > * {
+  position: relative;
+  z-index: 1;
+}
+
+.app-sidebar nav a {
+  border-radius: 9px;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.app-sidebar nav a:hover {
+  background: rgba(255, 255, 255, 0.075);
+}
+
+.app-sidebar + div > header {
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 1px 0 rgba(230, 231, 240, 0.85);
+  backdrop-filter: blur(18px);
+}
+
+.compact-card {
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: var(--shadow-xs);
+}
+
+.science-panel {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(101, 86, 229, 0.085), transparent 14rem),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(249, 249, 255, 0.97));
+}
+
+.surface-hover {
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.surface-hover:hover {
+  border-color: rgba(101, 86, 229, 0.25);
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-2px);
+}
+
+/* ===== AI PHYSICS LAB SAFE REDESIGN END ===== */
+
+/* ===== SAFE SOFT TYPOGRAPHY START ===== */
+
+html,
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.app-soft-text .font-black {
+  font-weight: 800 !important;
+  letter-spacing: -0.015em !important;
+}
+
+.app-soft-text .font-extrabold {
+  font-weight: 700 !important;
+  letter-spacing: -0.008em !important;
+}
+
+.app-soft-text .font-bold {
+  font-weight: 600 !important;
+}
+
+.app-sidebar .font-black {
+  font-weight: 700 !important;
+}
+
+.app-sidebar .font-extrabold {
+  font-weight: 600 !important;
+}
+
+.app-sidebar a,
+.app-sidebar p,
+.app-sidebar span,
+.app-sidebar b {
+  text-shadow: none !important;
+}
+
+/* ===== SAFE SOFT TYPOGRAPHY END ===== */
+
+/* ===== TASK WORKSPACE SOFT TYPOGRAPHY START ===== */
+
+.task-workspace {
+  color: var(--text);
+}
+
+.task-workspace .font-black {
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.task-workspace .font-extrabold {
+  font-weight: 600 !important;
+  letter-spacing: -0.004em !important;
+}
+
+.task-workspace .font-bold {
+  font-weight: 600 !important;
+}
+
+.task-workspace p,
+.task-workspace label,
+.task-workspace textarea {
+  text-rendering: optimizeLegibility;
+}
+
+/* ===== TASK WORKSPACE SOFT TYPOGRAPHY END ===== */
