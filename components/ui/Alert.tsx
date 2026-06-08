@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode } from "react";
+﻿import type { HTMLAttributes, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -27,14 +27,17 @@ export function Alert({
   return (
     <div
       className={cn(
-        "rounded-[var(--radius-md)] border px-3 py-2.5 text-sm",
+        "rounded-[var(--radius-sm)] border px-3 py-2.5 text-sm",
         variants[variant],
         className
       )}
       {...props}
     >
-      {title ? <p className="font-extrabold">{title}</p> : null}
-      <div className={cn("leading-5", title && "mt-1")}>{children}</div>
+      {title ? <p className="font-semibold">{title}</p> : null}
+
+      <div className={cn("font-normal leading-5", title && "mt-1")}>
+        {children}
+      </div>
     </div>
   );
 }

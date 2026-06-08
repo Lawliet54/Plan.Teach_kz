@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth";
 import { getStudentInterests } from "@/lib/interests";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -127,7 +127,7 @@ export async function POST(request: Request) {
   });
 
   const { data: userMessage, error: userMessageError } = await supabase
-    .from("ai_messages")
+    .from("ai_chat_messages")
     .insert({
       chat_id: chatId,
       student_id: profile.id,
@@ -146,7 +146,7 @@ export async function POST(request: Request) {
 
   const { data: assistantMessage, error: assistantMessageError } =
     await supabase
-      .from("ai_messages")
+      .from("ai_chat_messages")
       .insert({
         chat_id: chatId,
         student_id: profile.id,

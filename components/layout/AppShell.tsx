@@ -199,6 +199,38 @@ function Sidebar({
       </nav>
 
       <div className="border-t border-white/10 p-2">
+        {profile.role === "student" && (!collapsed || mobile) ? (
+          <Link
+            href="/ai"
+            onClick={onClose}
+            className="mb-2 block rounded-[var(--radius-md)] border border-white/12 bg-white/[0.07] p-3 transition hover:bg-white/[0.12]"
+          >
+            <div className="flex items-center gap-2">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/10 text-cyan-200">
+                <MessageCircle className="h-4 w-4" />
+              </span>
+
+              <div className="min-w-0">
+                <p className="truncate text-xs font-semibold text-white">
+                  AI көмекші
+                </p>
+
+                <p className="mt-0.5 truncate text-[10px] font-normal text-white/58">
+                  Сұрағыңыз бар ма?
+                </p>
+              </div>
+            </div>
+
+            <p className="mt-2 text-[10px] font-normal leading-4 text-white/58">
+              Физика тақырыптары бойынша жеке көмек алыңыз.
+            </p>
+
+            <span className="mt-2 inline-flex h-7 w-full items-center justify-center rounded-[var(--radius-sm)] bg-[var(--primary)] text-[10px] font-semibold text-white">
+              Сұрақ жіберу
+            </span>
+          </Link>
+        ) : null}
+
         <form action={signOutAction}>
           <button type="submit" className="flex h-9 w-full items-center gap-2 rounded-[4px] px-2 text-xs font-extrabold text-white/62 transition hover:bg-white/8 hover:text-white">
             <span className="grid h-6 w-6 shrink-0 place-items-center">
@@ -290,6 +322,7 @@ export function AppShell({ profile, active, children, hideTopbar = false, conten
     </div>
   );
 }
+
 
 
 

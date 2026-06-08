@@ -1,4 +1,4 @@
-import type { SelectHTMLAttributes } from "react";
+﻿import type { SelectHTMLAttributes } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -20,7 +20,7 @@ export function Select({
   return (
     <label className="block">
       {label ? (
-        <span className="mb-1 block text-xs font-semibold text-[var(--text-soft)]">
+        <span className="mb-1 block text-xs font-medium text-[var(--text-soft)]">
           {label}
         </span>
       ) : null}
@@ -28,8 +28,8 @@ export function Select({
       <select
         id={id}
         className={cn(
-          "h-9 w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-white px-3 text-sm text-[var(--text)] outline-none transition focus:border-[var(--primary)] focus:ring-4 focus:ring-[rgba(91,76,230,0.12)] disabled:cursor-not-allowed disabled:bg-[var(--surface-muted)] disabled:text-[var(--text-muted)]",
-          error && "border-[#fca5a5] focus:border-[var(--danger)] focus:ring-[rgba(220,38,38,0.1)]",
+          "focus-ring h-9 w-full rounded-[var(--radius-sm)] border border-[var(--border)] bg-white px-3 text-sm font-normal text-[var(--text)] outline-none transition disabled:cursor-not-allowed disabled:bg-[var(--surface-muted)] disabled:text-[var(--text-muted)]",
+          error && "border-[#fca5a5] focus:border-[var(--danger)]",
           className
         )}
         {...props}

@@ -1,195 +1,183 @@
-@import "tailwindcss";
-
-:root {
-  --app-bg: #f4f7fb;
-  --surface: #ffffff;
-  --surface-muted: #f7f9fc;
-  --surface-soft: #fbfcfe;
-  --surface-dark: #071522;
-  --panel: var(--surface);
-  --text: #0a1726;
-  --text-soft: #34445a;
-  --text-muted: #69778a;
-  --muted: var(--text-muted);
-  --border: #dfe6ef;
-  --border-soft: #edf1f6;
-  --border-accent: rgba(77, 83, 244, 0.28);
-  --navy: #071522;
-  --navy-2: #0b2136;
-  --sidebar: #071522;
-  --sidebar-2: #0c243a;
-  --sidebar-text: rgba(255, 255, 255, 0.94);
-  --sidebar-text-muted: rgba(255, 255, 255, 0.6);
-  --purple: #5747e7;
-  --purple-2: #4636cd;
-  --purple-soft: #efedff;
-  --blue: #1675e8;
-  --blue-soft: #edf6ff;
-  --cyan: #18b5d1;
-  --cyan-soft: #ecfcff;
-  --primary: #5747e7;
-  --primary-2: #4636cd;
-  --primary-contrast: #ffffff;
-  --green: #14925b;
-  --green-soft: #edfbf4;
-  --red: #d04444;
-  --red-soft: #fff1f1;
-  --yellow: #c77b16;
-  --yellow-soft: #fff8e8;
-  --success: var(--green);
-  --danger: var(--red);
-  --warning: var(--yellow);
-  --radius-xs: 2px;
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius: var(--radius-md);
-  --shadow-xs: 0 1px 2px rgba(7, 21, 34, 0.04);
-  --shadow-sm: 0 7px 22px rgba(7, 21, 34, 0.07);
-  --shadow: var(--shadow-sm);
-  --shadow-hover: 0 14px 32px rgba(7, 21, 34, 0.11);
-  --card-accent: rgba(87, 71, 231, 0.38);
-}
-
-* { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body {
-  min-height: 100vh;
-  margin: 0;
-  background: var(--app-bg);
-  color: var(--text);
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, Helvetica, sans-serif;
-  font-size: 14px;
-  line-height: 1.5;
-  text-rendering: optimizeLegibility;
-}
-button, input, select, textarea { font: inherit; }
-button { cursor: pointer; }
-button:disabled { cursor: not-allowed; }
-a { color: inherit; text-decoration: none; }
-img, svg, video, canvas { max-width: 100%; }
-input, select, textarea { min-width: 0; }
-
-.compact-container { width: min(1220px, calc(100% - 24px)); margin-inline: auto; }
-.page-stack { display: flex; flex-direction: column; gap: 12px; }
-.compact-card { border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--panel); box-shadow: var(--shadow-xs); }
-.app-shell { min-height: 100vh; background: var(--app-bg); }
-.app-sidebar {
-  background:
-    radial-gradient(circle at 20% 0%, rgba(87, 71, 231, 0.32), transparent 15rem),
-    linear-gradient(180deg, var(--sidebar) 0%, var(--sidebar-2) 100%);
-}
-.physics-grid {
-  background-image:
-    linear-gradient(rgba(93, 114, 141, 0.075) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(93, 114, 141, 0.075) 1px, transparent 1px);
-  background-size: 28px 28px;
-}
-.science-panel {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(247,250,255,.96));
-}
-.science-panel::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(90deg, transparent 0%, rgba(87, 71, 231, .045) 48%, transparent 100%);
-}
-.data-label { font-size: 10px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); }
-.section-title { color: var(--text); font-size: 16px; font-weight: 900; letter-spacing: -.015em; }
-.section-description { margin-top: 3px; color: var(--text-muted); font-size: 12px; line-height: 1.6; }
-.purple-gradient { background: linear-gradient(135deg, #4737d0 0%, #6658f2 100%); }
-.soft-purple { background: var(--purple-soft); color: var(--purple); }
-.focus-ring { outline: none; transition: border-color 160ms ease, box-shadow 160ms ease; }
-.focus-ring:focus-visible { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(87, 71, 231, .14); }
-.small-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(100,116,139,.34) transparent; }
-.small-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-.small-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.small-scrollbar::-webkit-scrollbar-thumb { border-radius: 99px; background: rgba(100,116,139,.34); }
-.small-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,.5); }
-
-@keyframes orbit-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@keyframes orbit-spin-reverse { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
-@keyframes pulse-node { 0%,100% { transform: scale(.86); opacity: .58; } 50% { transform: scale(1); opacity: 1; } }
-@keyframes scan-line { from { transform: translateX(-120%); } to { transform: translateX(240%); } }
-@keyframes graph-draw { from { stroke-dashoffset: 520; } to { stroke-dashoffset: 0; } }
-@keyframes float-y { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
-@keyframes fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-.animate-orbit { animation: orbit-spin 16s linear infinite; transform-origin: center; }
-.animate-orbit-reverse { animation: orbit-spin-reverse 22s linear infinite; transform-origin: center; }
-.animate-node { animation: pulse-node 2.8s ease-in-out infinite; transform-origin: center; }
-.animate-scan { animation: scan-line 4.5s linear infinite; }
-.animate-graph { stroke-dasharray: 520; animation: graph-draw 3s ease-out both; }
-.animate-float { animation: float-y 5s ease-in-out infinite; }
-.animate-fade-up { animation: fade-up .45s ease-out both; }
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
-}
-@media (min-width: 640px) {
-  .compact-container { width: min(1220px, calc(100% - 34px)); }
-  .page-stack { gap: 16px; }
-}
-
-/* ===== AI PHYSICS LAB SAFE REDESIGN START ===== */
+﻿@import "tailwindcss";
 
 :root {
   --app-bg: #f7f7fc;
+  --app-bg-soft: #fbfbff;
+
   --surface: #ffffff;
   --surface-muted: #f7f8fc;
   --surface-soft: #fbfbfe;
-  --surface-dark: #11152f;
+  --surface-dark: #17172f;
   --panel: var(--surface);
 
-  --text: #17182d;
-  --text-soft: #41455f;
-  --text-muted: #7a7f99;
+  --text: #20243a;
+  --text-soft: #50566e;
+  --text-muted: #7d849c;
+  --text-faint: #9ca3b7;
   --muted: var(--text-muted);
 
-  --border: #e6e7f0;
+  --border: #e5e7f0;
   --border-soft: #f0f1f6;
   --border-accent: rgba(101, 86, 229, 0.24);
 
   --navy: #17172f;
-  --navy-2: #222348;
+  --navy-2: #202149;
   --sidebar: #17172f;
   --sidebar-2: #202149;
+  --sidebar-text: rgba(255, 255, 255, 0.94);
+  --sidebar-text-muted: rgba(255, 255, 255, 0.58);
 
   --purple: #6556e5;
   --purple-2: #5142cf;
+  --purple-3: #8477f3;
   --purple-soft: #f1efff;
+  --purple-soft-2: #f8f7ff;
 
   --blue: #3478e5;
   --blue-soft: #eef5ff;
 
-  --primary: #6556e5;
-  --primary-2: #5142cf;
+  --cyan: #20a9c7;
+  --cyan-soft: #eefcff;
 
   --green: #269763;
   --green-soft: #effbf5;
+
   --red: #d24f5d;
   --red-soft: #fff2f4;
+
   --yellow: #c98622;
   --yellow-soft: #fff8ea;
+
+  --primary: var(--purple);
+  --primary-2: var(--purple-2);
+  --primary-contrast: #ffffff;
+
+  --success: var(--green);
+  --danger: var(--red);
+  --warning: var(--yellow);
 
   --radius-xs: 5px;
   --radius-sm: 8px;
   --radius-md: 11px;
   --radius-lg: 15px;
+  --radius-xl: 19px;
+  --radius: var(--radius-md);
 
   --shadow-xs: 0 1px 2px rgba(30, 32, 65, 0.035);
   --shadow-sm: 0 7px 20px rgba(30, 32, 65, 0.055);
+  --shadow-md: 0 14px 36px rgba(30, 32, 65, 0.075);
   --shadow-hover: 0 18px 44px rgba(30, 32, 65, 0.1);
+  --shadow: var(--shadow-sm);
+
+  --card-accent: rgba(101, 86, 229, 0.34);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
+  min-height: 100vh;
+  margin: 0;
   background:
     radial-gradient(circle at 82% -8%, rgba(112, 94, 230, 0.1), transparent 24rem),
     radial-gradient(circle at 8% 102%, rgba(52, 120, 229, 0.075), transparent 22rem),
     var(--app-bg);
+  color: var(--text);
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Arial,
+    Helvetica,
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+a {
+  text-decoration: none;
+}
+
+a:not([class]) {
+  color: inherit;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea {
+  min-width: 0;
+}
+
+/* Мәтін тым ауыр көрінбеуі үшін барлық бетке ортақ жұмсарту */
+.font-black {
+  font-weight: 700 !important;
+}
+
+.font-extrabold {
+  font-weight: 600 !important;
+}
+
+.font-bold {
+  font-weight: 600 !important;
+}
+
+.compact-container {
+  width: min(1240px, calc(100% - 24px));
+  margin-inline: auto;
+}
+
+.page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.compact-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: var(--shadow-xs);
+}
+
+.app-shell {
+  min-height: 100vh;
+  background: var(--app-bg);
 }
 
 .app-sidebar {
@@ -236,7 +224,7 @@ body {
 }
 
 .app-sidebar nav a {
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   transition:
     color 160ms ease,
     background-color 160ms ease,
@@ -253,16 +241,34 @@ body {
   backdrop-filter: blur(18px);
 }
 
-.compact-card {
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.97);
-  box-shadow: var(--shadow-xs);
+.physics-grid {
+  background-image:
+    linear-gradient(rgba(93, 114, 141, 0.075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(93, 114, 141, 0.075) 1px, transparent 1px);
+  background-size: 28px 28px;
 }
 
 .science-panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   background:
     radial-gradient(circle at 100% 0%, rgba(101, 86, 229, 0.085), transparent 14rem),
     linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(249, 249, 255, 0.97));
+}
+
+.science-panel::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(101, 86, 229, 0.035) 48%,
+    transparent 100%
+  );
 }
 
 .surface-hover {
@@ -278,72 +284,198 @@ body {
   transform: translateY(-2px);
 }
 
-/* ===== AI PHYSICS LAB SAFE REDESIGN END ===== */
-
-/* ===== SAFE SOFT TYPOGRAPHY START ===== */
-
-html,
-body {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
+.data-label {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
-.app-soft-text .font-black {
-  font-weight: 800 !important;
-  letter-spacing: -0.015em !important;
-}
-
-.app-soft-text .font-extrabold {
-  font-weight: 700 !important;
-  letter-spacing: -0.008em !important;
-}
-
-.app-soft-text .font-bold {
-  font-weight: 600 !important;
-}
-
-.app-sidebar .font-black {
-  font-weight: 700 !important;
-}
-
-.app-sidebar .font-extrabold {
-  font-weight: 600 !important;
-}
-
-.app-sidebar a,
-.app-sidebar p,
-.app-sidebar span,
-.app-sidebar b {
-  text-shadow: none !important;
-}
-
-/* ===== SAFE SOFT TYPOGRAPHY END ===== */
-
-/* ===== TASK WORKSPACE SOFT TYPOGRAPHY START ===== */
-
-.task-workspace {
+.section-title {
   color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
 }
 
-.task-workspace .font-black {
-  font-weight: 700 !important;
-  letter-spacing: -0.01em !important;
+.section-description {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.6;
 }
 
-.task-workspace .font-extrabold {
-  font-weight: 600 !important;
-  letter-spacing: -0.004em !important;
+.purple-gradient {
+  background: linear-gradient(135deg, #5142cf 0%, #7667ef 100%);
 }
 
-.task-workspace .font-bold {
-  font-weight: 600 !important;
+.soft-purple {
+  color: var(--purple);
+  background: var(--purple-soft);
 }
 
-.task-workspace p,
-.task-workspace label,
-.task-workspace textarea {
-  text-rendering: optimizeLegibility;
+.focus-ring {
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
-/* ===== TASK WORKSPACE SOFT TYPOGRAPHY END ===== */
+.focus-ring:focus-visible {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(101, 86, 229, 0.14);
+}
+
+.small-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, 0.34) transparent;
+}
+
+.small-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.small-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.small-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 99px;
+  background: rgba(100, 116, 139, 0.34);
+}
+
+.small-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.5);
+}
+
+@keyframes orbit-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes orbit-spin-reverse {
+  from {
+    transform: rotate(360deg);
+  }
+
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes pulse-node {
+  0%,
+  100% {
+    opacity: 0.58;
+    transform: scale(0.86);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes scan-line {
+  from {
+    transform: translateX(-120%);
+  }
+
+  to {
+    transform: translateX(240%);
+  }
+}
+
+@keyframes graph-draw {
+  from {
+    stroke-dashoffset: 520;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-orbit {
+  animation: orbit-spin 16s linear infinite;
+  transform-origin: center;
+}
+
+.animate-orbit-reverse {
+  animation: orbit-spin-reverse 22s linear infinite;
+  transform-origin: center;
+}
+
+.animate-node {
+  animation: pulse-node 2.8s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.animate-scan {
+  animation: scan-line 4.5s linear infinite;
+}
+
+.animate-graph {
+  stroke-dasharray: 520;
+  animation: graph-draw 3s ease-out both;
+}
+
+.animate-float {
+  animation: float-y 5s ease-in-out infinite;
+}
+
+.animate-fade-up {
+  animation: fade-up 0.45s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (min-width: 640px) {
+  .compact-container {
+    width: min(1240px, calc(100% - 34px));
+  }
+
+  .page-stack {
+    gap: 16px;
+  }
+}
+

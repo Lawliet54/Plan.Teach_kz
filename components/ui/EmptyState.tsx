@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
@@ -28,15 +28,17 @@ export function EmptyState({
       )}
     >
       {icon ? (
-        <div className="mb-3 grid h-10 w-10 place-items-center rounded-[var(--radius-md)] bg-[var(--purple-soft)] text-[var(--primary)]">
+        <div className="mb-3 grid h-10 w-10 place-items-center rounded-[var(--radius-sm)] bg-[var(--purple-soft)] text-[var(--primary)]">
           {icon}
         </div>
       ) : null}
 
-      <h2 className="text-sm font-extrabold text-[var(--text)]">{title}</h2>
+      <h2 className="text-sm font-semibold text-[var(--text)]">
+        {title}
+      </h2>
 
       {description ? (
-        <p className="mt-1 max-w-md text-xs leading-5 text-[var(--text-muted)]">
+        <p className="mt-1 max-w-md text-xs font-normal leading-5 text-[var(--text-muted)]">
           {description}
         </p>
       ) : null}

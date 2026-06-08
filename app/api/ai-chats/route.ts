@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -19,7 +19,7 @@ export async function GET() {
       title,
       created_at,
       updated_at,
-      ai_messages (
+      ai_messages:ai_chat_messages (
         id,
         role,
         content,
@@ -30,7 +30,7 @@ export async function GET() {
     .eq("student_id", profile.id)
     .order("updated_at", { ascending: false })
     .order("created_at", {
-      referencedTable: "ai_messages",
+      referencedTable: "ai_chat_messages",
       ascending: true,
     });
 
@@ -64,7 +64,7 @@ export async function POST() {
   }
 
   const { data: message, error: messageError } = await supabase
-    .from("ai_messages")
+    .from("ai_chat_messages")
     .insert({
       chat_id: chat.id,
       student_id: profile.id,
