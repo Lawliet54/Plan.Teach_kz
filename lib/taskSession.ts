@@ -37,6 +37,8 @@ export type TaskSessionState = {
   startedAt: string;
   updatedAt: string;
   completedAt: string | null;
+  adaptiveSavedAt: string | null;
+  adaptiveSaveError: string | null;
 };
 
 export type TaskSessionStep = {
@@ -97,6 +99,8 @@ export function createTaskSession(params: {
     startedAt: now,
     updatedAt: now,
     completedAt: null,
+    adaptiveSavedAt: null,
+    adaptiveSaveError: null,
   };
 }
 
@@ -112,7 +116,29 @@ export function readTaskSession(params: {
 
     if (!raw) return null;
 
-    return JSON.parse(raw) as TaskSessionState;
+    const stored = JSON.parse(raw) as Partial<TaskSessionState>;
+
+    if (
+      !stored.answers ||
+      !stored.startedAt ||
+      typeof stored.currentStepIndex !== "number"
+    ) {
+      return null;
+    }
+
+    return {
+      grade: params.grade,
+      topicSlug: params.topicSlug,
+      level: params.level,
+      currentStepIndex: stored.currentStepIndex,
+      answers: stored.answers,
+      result: stored.result ?? null,
+      startedAt: stored.startedAt,
+      updatedAt: stored.updatedAt ?? stored.startedAt,
+      completedAt: stored.completedAt ?? null,
+      adaptiveSavedAt: stored.adaptiveSavedAt ?? null,
+      adaptiveSaveError: stored.adaptiveSaveError ?? null,
+    };
   } catch {
     return null;
   }

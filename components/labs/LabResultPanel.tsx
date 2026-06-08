@@ -12,6 +12,7 @@ export function LabResultPanel({
   onAddMeasurement,
   onComplete,
   canComplete,
+  isSaving,
   validationMessage,
   className,
 }: {
@@ -21,6 +22,7 @@ export function LabResultPanel({
   onAddMeasurement: () => void;
   onComplete: () => void;
   canComplete: boolean;
+  isSaving?: boolean;
   validationMessage: string;
   className?: string;
 }) {
@@ -71,8 +73,8 @@ export function LabResultPanel({
           {canComplete ? "Дайын" : "Әлі дайын емес"}
         </div>
 
-        <Button onClick={onComplete} disabled={!canComplete}>
-          Зертхананы аяқтау
+        <Button onClick={onComplete} disabled={!canComplete || isSaving}>
+          {isSaving ? "Сақталуда..." : "Зертхананы аяқтау"}
         </Button>
       </div>
     </div>

@@ -1,13 +1,15 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
+import type { ComponentType, ReactNode } from "react";
 import {
   Atom,
   BarChart3,
-  Bell,
   BookOpen,
+  ChevronLeft,
+  ChevronRight,
   ClipboardCheck,
   FlaskConical,
   Home,
@@ -16,12 +18,14 @@ import {
   Menu,
   MessageCircle,
   PlayCircle,
+  Search,
   Settings,
   ShieldCheck,
   User,
   UsersRound,
   X,
 } from "lucide-react";
+
 import { signOutAction } from "@/app/auth/actions";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/types";
@@ -29,51 +33,24 @@ import type { Profile } from "@/lib/types";
 type NavItem = {
   href: string;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
 };
 
 type AppShellProps = {
   profile: Profile;
   active?: string;
-  children: React.ReactNode;
+  children: ReactNode;
   hideTopbar?: boolean;
   contentClassName?: string;
 };
 
-function Dots() {
-  return (
-    <span className="inline-flex items-center gap-1">
-      <span className="h-1.5 w-1.5 rounded-full bg-white/70" />
-      <span className="h-1.5 w-1.5 rounded-full bg-white/40" />
-      <span className="h-1.5 w-1.5 rounded-full bg-white/25" />
-    </span>
-  );
-}
-
-function NavIcon({
-  icon: Icon,
-  active,
-}: {
-  icon: NavItem["icon"];
-  active: boolean;
-}) {
-  return (
-    <span
-      className={cn(
-        "grid h-7 w-7 place-items-center rounded-lg border transition",
-        active
-          ? "border-white/20 bg-white/15 text-white shadow-[0_8px_20px_rgba(91,76,230,0.18)]"
-          : "border-white/10 bg-transparent text-white/75 group-hover:border-white/20 group-hover:bg-white/10 group-hover:text-white"
-      )}
-    >
-      <Icon className="h-[18px] w-[18px]" />
-    </span>
-  );
-}
+const SIDEBAR_STORAGE_KEY = "plan-teach-sidebar-collapsed";
+const SIDEBAR_EVENT = "plan-teach-sidebar-updated";
 
 const studentNav: NavItem[] = [
   { href: "/dashboard", label: "Басты бет", icon: Home },
   { href: "/topics", label: "Тақырыптар", icon: BookOpen },
+  { href: "/tasks", label: "Тапсырмалар", icon: ClipboardCheck },
   { href: "/labs", label: "Зертханалар", icon: FlaskConical },
   { href: "/videos", label: "Видео сабақтар", icon: PlayCircle },
   { href: "/results", label: "Нәтижелер", icon: LineChart },
@@ -93,248 +70,259 @@ const teacherNav: NavItem[] = [
 
 const adminNav: NavItem[] = [
   { href: "/admin/dashboard", label: "Админ панель", icon: ShieldCheck },
-  { href: "/teacher/dashboard", label: "Мұғалім көрінісі", icon: UsersRound },
-  { href: "/learn", label: "Контент", icon: BookOpen },
-  { href: "/analytics", label: "Аналитика", icon: BarChart3 },
+  { href: "/admin/pages", label: "Барлық беттер", icon: BookOpen },
+  { href: "/teacher/dashboard", label: "Мұғалім: басты бет", icon: Home },
+  { href: "/teacher/students", label: "Мұғалім: оқушылар", icon: UsersRound },
+  { href: "/teacher/submissions", label: "Мұғалім: тексеру", icon: ClipboardCheck },
+  { href: "/teacher/analytics", label: "Мұғалім: аналитика", icon: BarChart3 },
+  { href: "/teacher/controls", label: "Мұғалім: БЖБ / ТЖБ", icon: BookOpen },
   { href: "/profile", label: "Жеке кабинет", icon: Settings },
 ];
 
-export function AppShell({
+function getHomePath(role: Profile["role"]) {
+  if (role === "teacher") return "/teacher/dashboard";
+  if (role === "admin") return "/admin/dashboard";
+  return "/dashboard";
+}
+
+function isActive(pathname: string, active: string | undefined, href: string) {
+  return active === href || pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
+}
+
+function getMobileNav(role: Profile["role"], nav: NavItem[]) {
+  if (role === "student") return nav.filter((item) => ["/dashboard", "/topics", "/tasks", "/labs"].includes(item.href));
+  if (role === "teacher") return nav.filter((item) => ["/teacher/dashboard", "/teacher/students", "/teacher/submissions", "/teacher/analytics"].includes(item.href));
+  return nav.slice(0, 4);
+}
+
+function subscribeSidebar(callback: () => void) {
+  if (typeof window === "undefined") return () => undefined;
+  window.addEventListener("storage", callback);
+  window.addEventListener(SIDEBAR_EVENT, callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener(SIDEBAR_EVENT, callback);
+  };
+}
+
+function getSidebarSnapshot() {
+  if (typeof window === "undefined") return false;
+  return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === "true";
+}
+
+function getServerSidebarSnapshot() {
+  return false;
+}
+
+function Sidebar({
   profile,
+  pathname,
   active,
-  children,
-  hideTopbar = false,
-  contentClassName,
-}: AppShellProps) {
-  const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const nav = useMemo(() => {
-    if (profile.role === "admin") {
-      return adminNav;
-    }
-
-    if (profile.role === "teacher") {
-      return teacherNav;
-    }
-
-    return studentNav;
-  }, [profile.role]);
-
+  nav,
+  collapsed,
+  mobile = false,
+  onClose,
+}: {
+  profile: Profile;
+  pathname: string;
+  active?: string;
+  nav: NavItem[];
+  collapsed: boolean;
+  mobile?: boolean;
+  onClose?: () => void;
+}) {
   const displayName = profile.full_name || profile.email || "Қолданушы";
-  const roleLabel =
-    profile.role === "teacher"
-      ? "Мұғалім"
-      : profile.role === "admin"
-        ? "Әкімші"
-        : "Оқушы";
+  const roleLabel = profile.role === "teacher" ? "Мұғалім" : profile.role === "admin" ? "Әкімші" : "Оқушы";
 
   return (
-    <div className="h-screen overflow-hidden bg-[var(--app-bg)] text-[var(--text)]">
-      <div className="h-screen md:grid md:grid-cols-[260px_1fr]">
-        {sidebarOpen ? (
-          <button
-            type="button"
-            aria-label="Мәзірді жабу"
-            onClick={() => setSidebarOpen(false)}
-            className="fixed inset-0 z-30 bg-black/40 md:hidden"
-          />
+    <aside
+      className={cn(
+        "app-sidebar flex h-full flex-col text-white",
+        mobile ? "w-[264px]" : "fixed inset-y-0 left-0 z-30 hidden border-r border-white/10 lg:flex",
+        !mobile && (collapsed ? "w-[70px]" : "w-[236px]")
+      )}
+    >
+      <div className="flex h-15 items-center border-b border-white/10 px-3">
+        <Link href={getHomePath(profile.role)} className="flex min-w-0 items-center gap-2.5" onClick={onClose}>
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[4px] border border-white/15 bg-white/10">
+            <Atom className="h-4.5 w-4.5" />
+          </span>
+          {!collapsed || mobile ? (
+            <span className="min-w-0">
+              <b className="block truncate text-sm tracking-[-.02em]">Plan.Teach_kz</b>
+              <span className="block truncate text-[9px] font-black uppercase tracking-[.14em] text-white/45">AI Physics Lab</span>
+            </span>
+          ) : null}
+        </Link>
+        {mobile ? (
+          <button onClick={onClose} className="ml-auto grid h-8 w-8 place-items-center rounded-[4px] border border-white/10" aria-label="Мәзірді жабу">
+            <X className="h-4 w-4" />
+          </button>
         ) : null}
+      </div>
 
-        <aside
-          className={cn(
-            "fixed left-0 top-0 z-40 h-full w-[260px] transform border-r border-white/10 bg-[linear-gradient(180deg,var(--sidebar)_0%,var(--sidebar-2)_100%)] shadow-[18px_0_42px_rgba(16,33,63,0.16)] transition-transform duration-200 md:static md:block md:h-auto md:translate-x-0 md:opacity-100 md:transition-none",
-            sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          )}
-        >
-          <div className="flex h-full min-h-0 flex-col px-2.5 py-3 sm:px-3.5 sm:py-4">
-            <div className="flex shrink-0 items-center justify-between gap-2.5">
-              <Link
-                href="/dashboard"
-                onClick={() => setSidebarOpen(false)}
-                className="flex min-w-0 items-center gap-2.5"
-              >
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[linear-gradient(135deg,var(--primary),var(--primary-2))] text-white shadow-[0_0_18px_rgba(91,76,230,0.40)]">
-                  <Atom className="h-[18px] w-[18px]" />
-                </span>
-
-                <span className="min-w-0 leading-tight">
-                  <span className="block truncate text-sm font-extrabold text-white">
-                    Plan.Teach_kz
-                  </span>
-                  <span className="block truncate text-[10px] font-semibold text-white/65">
-                    Адаптивті оқу платформасы
-                  </span>
-                </span>
-              </Link>
-
-              <button
-                type="button"
-                aria-label="Мәзірді жабу"
-                onClick={() => setSidebarOpen(false)}
-                className="grid h-8 w-8 place-items-center rounded-lg border border-white/10 text-white/80 md:hidden"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1 small-scrollbar">
-              <div className="grid gap-1">
-                <div className="px-2 pb-1.5 text-[9px] font-bold uppercase text-white/45 sm:px-3">
-                  Навигация
-                </div>
-
-                {nav.map((item) => {
-                  const isActive =
-                    active === item.href ||
-                    pathname === item.href ||
-                    pathname.startsWith(`${item.href}/`);
-
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setSidebarOpen(false)}
-                      className={cn(
-                        "group flex items-center gap-2 rounded-xl border px-2 py-1.5 transition sm:gap-2.5 sm:px-2.5",
-                        isActive
-                          ? "border-white/20 bg-[linear-gradient(90deg,rgba(91,76,230,0.42),rgba(255,255,255,0.08))] text-white shadow-[0_10px_26px_rgba(0,0,0,0.16)]"
-                          : "border-transparent text-[var(--sidebar-text)] hover:border-white/20 hover:bg-white/10"
-                      )}
-                    >
-                      <NavIcon icon={item.icon} active={isActive} />
-
-                      <span className="min-w-0 flex-1">
-                        <span
-                          className={cn(
-                            "block truncate text-[12px] font-semibold sm:text-[13px]",
-                            isActive ? "text-white" : "text-[var(--sidebar-text)]"
-                          )}
-                        >
-                          {item.label}
-                        </span>
-
-                        {isActive ? (
-                          <span className="mt-0.5 block text-[9px] text-white/55 sm:text-[10px]">
-                            Қазір осы бөлімдесіз
-                          </span>
-                        ) : null}
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="shrink-0 pt-2 sm:pt-3">
-              <div className="rounded-xl border border-white/12 bg-[linear-gradient(135deg,rgba(255,255,255,0.10),rgba(91,76,230,0.14))] p-2.5 text-white shadow-[0_12px_28px_rgba(0,0,0,0.14)] sm:p-3">
-                <div className="flex items-center justify-between">
-                  <div className="text-[12px] font-semibold sm:text-[13px]">
-                    AI көмекші
-                  </div>
-                  <Dots />
-                </div>
-
-                <div className="mt-1 text-[10px] text-white/70 sm:text-[11px]">
-                  Сұрағыңыз бар ма? Түсіндіруге көмектесемін.
-                </div>
-
-                <Link
-                  href="/ai"
-                  onClick={() => setSidebarOpen(false)}
-                  className="mt-2 inline-flex w-full items-center justify-center rounded-lg bg-[var(--primary)] px-3 py-1.5 text-[12px] font-semibold text-white shadow-[0_10px_24px_rgba(91,76,230,0.26)] hover:bg-[var(--primary-2)] sm:text-[13px]"
-                >
-                  Сұрақ қою
-                </Link>
-              </div>
-
-              <form action={signOutAction} className="mt-2">
-                <button
-                  type="submit"
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[12px] font-semibold text-white/90 hover:bg-white/10 sm:text-[13px]"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Шығу
-                </button>
-              </form>
-            </div>
+      <div className="border-b border-white/10 px-3 py-3">
+        {!collapsed || mobile ? (
+          <>
+            <p className="text-[9px] font-black uppercase tracking-[.15em] text-white/42">{roleLabel} панелі</p>
+            <p className="mt-1 truncate text-xs font-extrabold text-white/90">{displayName}</p>
+          </>
+        ) : (
+          <div className="mx-auto grid h-8 w-8 place-items-center rounded-[4px] bg-white/10 text-xs font-black">
+            {displayName.slice(0, 1).toUpperCase()}
           </div>
-        </aside>
+        )}
+      </div>
 
-        <div className="flex min-h-0 flex-col">
-          {hideTopbar ? null : (
-            <header className="z-10 shrink-0 border-b border-[var(--border)] bg-white/88 backdrop-blur">
-              <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2 sm:px-5 sm:py-3">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <button
-                  type="button"
-                  onClick={() => setSidebarOpen(true)}
-                  className="grid h-9 w-9 place-items-center rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow)] hover:bg-[var(--surface-muted)] sm:h-10 sm:w-10 md:hidden"
-                  aria-label="Мәзірді ашу"
-                >
-                  <Menu className="h-[18px] w-[18px]" />
-                </button>
-
-                <div className="hidden leading-tight sm:block">
-                  <p className="text-sm font-extrabold text-[var(--text)]">
-                    {profile.role === "teacher"
-                      ? "Мұғалім панелі"
-                      : profile.role === "admin"
-                        ? "Админ панель"
-                        : "Оқушы кабинеті"}
-                  </p>
-                  <p className="text-xs font-medium text-[var(--text-muted)]">
-                    7-11 сынып физикасы
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 sm:gap-3">
-                <button
-                  type="button"
-                  className="relative grid h-9 w-9 place-items-center rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow)] hover:bg-[var(--surface-muted)] sm:h-10 sm:w-10"
-                  aria-label="Хабарламалар"
-                >
-                  <Bell className="h-[18px] w-[18px]" />
-                  <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-[var(--primary)]" />
-                </button>
-
-                <div className="hidden items-center gap-3 rounded-2xl border border-[var(--border)] bg-white px-3 py-2 shadow-[var(--shadow)] sm:flex">
-                  <div className="grid h-8 w-8 place-items-center rounded-xl bg-[var(--surface-muted)] text-sm font-bold text-[var(--primary)]">
-                    {displayName.slice(0, 1).toUpperCase()}
-                  </div>
-                  <div className="leading-tight">
-                    <div className="max-w-[180px] truncate text-sm font-semibold text-[var(--text)]">
-                      {displayName}
-                    </div>
-                    <div className="text-xs text-[var(--text-muted)]">
-                      {roleLabel}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid h-9 w-9 place-items-center rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow)] sm:hidden">
-                  <div className="grid h-7 w-7 place-items-center rounded-xl bg-[var(--surface-muted)] text-xs font-bold text-[var(--primary)]">
-                    {displayName.slice(0, 1).toUpperCase()}
-                  </div>
-                </div>
-              </div>
-              </div>
-            </header>
-          )}
-
-          <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-            <div
+      <nav className="small-scrollbar flex-1 space-y-1 overflow-y-auto px-2 py-3">
+        {nav.map((item) => {
+          const selected = isActive(pathname, active, item.href);
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              title={collapsed && !mobile ? item.label : undefined}
+              onClick={onClose}
               className={cn(
-                "mx-auto w-full max-w-7xl px-3 py-3 sm:px-5 sm:py-5",
-                contentClassName
+                "group flex h-9 items-center gap-2 rounded-[4px] px-2 text-xs font-extrabold transition",
+                selected ? "bg-white/14 text-white" : "text-white/68 hover:bg-white/8 hover:text-white"
               )}
             >
-              {children}
+              <span className={cn("grid h-6 w-6 shrink-0 place-items-center rounded-[3px] border", selected ? "border-white/20 bg-white/10" : "border-transparent")}>
+                <Icon className="h-3.5 w-3.5" />
+              </span>
+              {!collapsed || mobile ? <span className="truncate">{item.label}</span> : null}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="border-t border-white/10 p-2">
+        {profile.role === "student" && (!collapsed || mobile) ? (
+          <Link
+            href="/ai"
+            onClick={onClose}
+            className="mb-2 block rounded-[var(--radius-md)] border border-white/12 bg-white/[0.07] p-3 transition hover:bg-white/[0.12]"
+          >
+            <div className="flex items-center gap-2">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/10 text-cyan-200">
+                <MessageCircle className="h-4 w-4" />
+              </span>
+
+              <div className="min-w-0">
+                <p className="truncate text-xs font-semibold text-white">
+                  AI көмекші
+                </p>
+
+                <p className="mt-0.5 truncate text-[10px] font-normal text-white/58">
+                  Сұрағыңыз бар ма?
+                </p>
+              </div>
             </div>
-          </main>
-        </div>
+
+            <p className="mt-2 text-[10px] font-normal leading-4 text-white/58">
+              Физика тақырыптары бойынша жеке көмек алыңыз.
+            </p>
+
+            <span className="mt-2 inline-flex h-7 w-full items-center justify-center rounded-[var(--radius-sm)] bg-[var(--primary)] text-[10px] font-semibold text-white">
+              Сұрақ жіберу
+            </span>
+          </Link>
+        ) : null}
+
+        <form action={signOutAction}>
+          <button type="submit" className="flex h-9 w-full items-center gap-2 rounded-[4px] px-2 text-xs font-extrabold text-white/62 transition hover:bg-white/8 hover:text-white">
+            <span className="grid h-6 w-6 shrink-0 place-items-center">
+              <LogOut className="h-3.5 w-3.5" />
+            </span>
+            {!collapsed || mobile ? <span>Шығу</span> : null}
+          </button>
+        </form>
       </div>
+    </aside>
+  );
+}
+
+export function AppShell({ profile, active, children, hideTopbar = false, contentClassName }: AppShellProps) {
+  const pathname = usePathname();
+  const [drawer, setDrawer] = useState(false);
+  const collapsed = useSyncExternalStore(subscribeSidebar, getSidebarSnapshot, getServerSidebarSnapshot);
+  const nav = useMemo(() => (profile.role === "admin" ? adminNav : profile.role === "teacher" ? teacherNav : studentNav), [profile.role]);
+  const mobileNav = useMemo(() => getMobileNav(profile.role, nav), [profile.role, nav]);
+  const displayName = profile.full_name || profile.email || "Қолданушы";
+  const roleLabel = profile.role === "teacher" ? "Мұғалім" : profile.role === "admin" ? "Әкімші" : "Оқушы";
+
+  function toggleSidebar() {
+    window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(!collapsed));
+    window.dispatchEvent(new Event(SIDEBAR_EVENT));
+  }
+
+  return (
+    <div className="app-soft-text min-h-dvh bg-[var(--app-bg)] text-[var(--text)]">
+      {drawer ? (
+        <>
+          <button aria-label="Мәзірді жабу" className="fixed inset-0 z-40 bg-[#071522]/55 lg:hidden" onClick={() => setDrawer(false)} />
+          <div className="fixed inset-y-0 left-0 z-50 lg:hidden">
+            <Sidebar profile={profile} pathname={pathname} active={active} nav={nav} collapsed={collapsed} mobile onClose={() => setDrawer(false)} />
+          </div>
+        </>
+      ) : null}
+
+      <Sidebar profile={profile} pathname={pathname} active={active} nav={nav} collapsed={collapsed} />
+
+      <div className={cn("min-h-dvh transition-[padding]", collapsed ? "lg:pl-[70px]" : "lg:pl-[236px]")}>
+        {!hideTopbar ? (
+          <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-white/90 backdrop-blur-xl">
+            <div className="flex h-14 items-center gap-3 px-3 sm:px-4">
+              <button className="grid h-8 w-8 place-items-center rounded-[4px] border border-[var(--border)] bg-white lg:hidden" onClick={() => setDrawer(true)} aria-label="Мәзірді ашу">
+                <Menu className="h-4 w-4" />
+              </button>
+              <button className="hidden h-8 w-8 place-items-center rounded-[4px] border border-[var(--border)] bg-white text-[var(--text-muted)] lg:grid" onClick={toggleSidebar} aria-label="Sidebar күйін өзгерту">
+                {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+              </button>
+              <div className="hidden h-8 max-w-sm flex-1 items-center gap-2 rounded-[4px] border border-[var(--border)] bg-[var(--surface-muted)] px-2.5 text-xs text-[var(--text-muted)] md:flex">
+                <Search className="h-3.5 w-3.5" />
+                Тақырып, формула немесе зертхана іздеу
+              </div>
+              <div className="ml-auto flex items-center gap-2">
+                <span className="hidden text-right sm:block">
+                  <b className="block max-w-[180px] truncate text-xs text-[var(--text)]">{displayName}</b>
+                  <span className="block text-[10px] font-bold text-[var(--text-muted)]">{roleLabel}</span>
+                </span>
+                <span className="grid h-8 w-8 place-items-center rounded-[4px] border border-[var(--border-accent)] bg-[var(--purple-soft)] text-xs font-black text-[var(--primary)]">
+                  {displayName.slice(0, 1).toUpperCase()}
+                </span>
+              </div>
+            </div>
+          </header>
+        ) : null}
+        <main className={cn("px-3 pb-20 pt-4 sm:px-4 lg:pb-5", contentClassName)}>{children}</main>
+      </div>
+
+      <nav
+        className="fixed inset-x-0 bottom-0 z-30 grid border-t border-[var(--border)] bg-white/96 px-1 py-1 backdrop-blur-xl lg:hidden"
+        style={{ gridTemplateColumns: `repeat(${mobileNav.length}, minmax(0,1fr))` }}
+      >
+        {mobileNav.map((item) => {
+          const selected = isActive(pathname, active, item.href);
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn("flex min-w-0 flex-col items-center gap-1 rounded-[4px] px-1 py-1.5 text-[10px] font-extrabold", selected ? "bg-[var(--purple-soft)] text-[var(--primary)]" : "text-[var(--text-muted)]")}
+            >
+              <Icon className="h-4 w-4" />
+              <span className="truncate">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }
+
+
+
+

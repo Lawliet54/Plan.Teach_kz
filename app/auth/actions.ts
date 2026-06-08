@@ -1,11 +1,12 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getRoleHomePath, getStudentEntryPath } from "@/lib/auth";
-import type { Profile, UserRole } from "@/lib/types";
+import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
+
+import { getRoleHomePath, getStudentEntryPath } from "@/lib/auth";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { Profile, UserRole } from "@/lib/types";
 
 function getFormString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -17,22 +18,16 @@ function getFormString(formData: FormData, key: string) {
   return value.trim();
 }
 
-function safeRedirect(path: string, type: "error" | "success", message: string): never {
+function safeRedirect(
+  path: string,
+  type: "error" | "success",
+  message: string
+): never {
   const params = new URLSearchParams({
     [type]: message,
   });
 
   redirect(`${path}?${params.toString()}`);
-}
-
-function normalizeRole(value: string): UserRole {
-  if (value === "teacher") {
-    return "teacher";
-  }
-
-  // Public register арқылы admin жасамаймыз.
-  // Admin кейін SQL немесе admin panel арқылы беріледі.
-  return "student";
 }
 
 async function getProfileForUser(
@@ -66,7 +61,11 @@ async function ensureProfileForUser(
   }
 
   const metadataRole = user.user_metadata?.role;
-  const role: UserRole = metadataRole === "teacher" ? "teacher" : "student";
+
+  const role: UserRole =
+    metadataRole === "teacher" || metadataRole === "admin"
+      ? metadataRole
+      : "student";
 
   const fullName =
     typeof user.user_metadata?.full_name === "string" &&
@@ -134,13 +133,6 @@ export async function signInAction(formData: FormData) {
     safeRedirect("/login", "error", "Email немесе құпиясөз қате.");
   }
 
-  if (signInData.session) {
-    await supabase.auth.setSession({
-      access_token: signInData.session.access_token,
-      refresh_token: signInData.session.refresh_token,
-    });
-  }
-
   const user = signInData.user;
 
   if (!user) {
@@ -158,13 +150,14 @@ export async function signInAction(formData: FormData) {
     safeRedirect(
       "/login",
       "error",
-      `Аккаунт кірді, бірақ profile жазбасын жасау мүмкін болмады: ${profileError}. Supabase-та 006 migration орындаңыз.`
+      `Аккаунт кірді, бірақ profile жазбасын жасау мүмкін болмады: ${profileError}.`
     );
   }
 
   if (profile.role === "student") {
     redirect(getStudentEntryPath(profile));
   }
+
   redirect(getRoleHomePath(profile.role));
 }
 
@@ -172,14 +165,17 @@ export async function signUpAction(formData: FormData) {
   const fullName = getFormString(formData, "full_name");
   const email = getFormString(formData, "email").toLowerCase();
   const password = getFormString(formData, "password");
-  const role = normalizeRole(getFormString(formData, "role"));
 
   if (!fullName || !email || !password) {
     safeRedirect("/register", "error", "Барлық өрісті толық толтырыңыз.");
   }
 
   if (password.length < 6) {
-    safeRedirect("/register", "error", "Құпиясөз кемінде 6 таңбадан тұруы керек.");
+    safeRedirect(
+      "/register",
+      "error",
+      "Құпиясөз кемінде 6 таңбадан тұруы керек."
+    );
   }
 
   const supabase = await createSupabaseServerClient();
@@ -190,7 +186,7 @@ export async function signUpAction(formData: FormData) {
     options: {
       data: {
         full_name: fullName,
-        role,
+        role: "student",
       },
     },
   });
@@ -201,7 +197,6 @@ export async function signUpAction(formData: FormData) {
 
   revalidatePath("/", "layout");
 
-  // Егер Supabase-та email confirm қосулы болса, session бірден берілмеуі мүмкін.
   if (!data.session) {
     safeRedirect(
       "/login",
@@ -210,13 +205,8 @@ export async function signUpAction(formData: FormData) {
     );
   }
 
-  if (role === "teacher") {
-    redirect("/teacher/dashboard");
-  }
-
   redirect("/onboarding/teacher-select");
 }
-
 
 export async function signOutAction() {
   const supabase = await createSupabaseServerClient();

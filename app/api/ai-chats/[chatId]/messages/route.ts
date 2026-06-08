@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -53,7 +53,7 @@ export async function POST(request: Request, { params }: RouteProps) {
   }
 
   const { data: message, error } = await supabase
-    .from("ai_messages")
+    .from("ai_chat_messages")
     .insert({
       chat_id: chatId,
       student_id: profile.id,

@@ -1,9 +1,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
+
+import { getStudentEntryPath } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getRoleHomePath, getStudentEntryPath } from "@/lib/auth";
-import type { Profile, UserRole } from "@/lib/types";
+import type { Profile } from "@/lib/types";
 
 function getFormString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -15,20 +16,13 @@ function getFormString(formData: FormData, key: string) {
   return value.trim();
 }
 
-function normalizeRole(value: string): UserRole {
-  if (value === "teacher") {
-    return "teacher";
-  }
-
-  return "student";
-}
-
 function redirectWithMessage(
   path: string,
   type: "error" | "success",
   message: string
 ): never {
   const params = new URLSearchParams({ [type]: message });
+
   redirect(`${path}?${params.toString()}`);
 }
 
@@ -49,27 +43,32 @@ async function getProfileForUser(
   return data as Profile;
 }
 
-async function ensureProfileForUser(
+async function ensureStudentProfileForUser(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   user: User,
-  fullName: string,
-  role: UserRole
+  fullName: string
 ): Promise<{ profile: Profile | null; error: string | null }> {
   const existingProfile = await getProfileForUser(supabase, user.id);
 
   if (existingProfile) {
-    return { profile: existingProfile, error: null };
+    return {
+      profile: existingProfile,
+      error: null,
+    };
   }
 
   const { data: rpcProfile, error: rpcError } = await supabase
     .rpc("ensure_profile_for_current_user", {
       p_full_name: fullName,
-      p_role: role,
+      p_role: "student",
     })
     .single();
 
   if (rpcProfile && !rpcError) {
-    return { profile: rpcProfile as Profile, error: null };
+    return {
+      profile: rpcProfile as Profile,
+      error: null,
+    };
   }
 
   const { data, error } = await supabase
@@ -78,7 +77,7 @@ async function ensureProfileForUser(
       id: user.id,
       email: user.email,
       full_name: fullName,
-      role,
+      role: "student",
     })
     .select("*")
     .single();
@@ -93,15 +92,18 @@ async function ensureProfileForUser(
     };
   }
 
-  return { profile: data as Profile, error: null };
+  return {
+    profile: data as Profile,
+    error: null,
+  };
 }
 
 export async function POST(request: Request) {
   const formData = await request.formData();
+
   const fullName = getFormString(formData, "full_name");
   const email = getFormString(formData, "email").toLowerCase();
   const password = getFormString(formData, "password");
-  const role = normalizeRole(getFormString(formData, "role"));
 
   if (!fullName || !email || !password) {
     redirectWithMessage("/register", "error", "Барлық өрісті толық толтырыңыз.");
@@ -123,7 +125,7 @@ export async function POST(request: Request) {
     options: {
       data: {
         full_name: fullName,
-        role,
+        role: "student",
       },
     },
   });
@@ -148,16 +150,10 @@ export async function POST(request: Request) {
     );
   }
 
-  await supabase.auth.setSession({
-    access_token: data.session.access_token,
-    refresh_token: data.session.refresh_token,
-  });
-
-  const { profile, error: profileError } = await ensureProfileForUser(
+  const { profile, error: profileError } = await ensureStudentProfileForUser(
     supabase,
     data.user,
-    fullName,
-    role
+    fullName
   );
 
   revalidatePath("/", "layout");
@@ -166,13 +162,9 @@ export async function POST(request: Request) {
     redirectWithMessage(
       "/login",
       "error",
-      `Аккаунт жасалды, бірақ profile жазбасын жасау мүмкін болмады: ${profileError}. Supabase-та 006 migration орындаңыз.`
+      `Аккаунт жасалды, бірақ profile жазбасын жасау мүмкін болмады: ${profileError}.`
     );
   }
 
-  if (profile.role === "student") {
-    redirect(getStudentEntryPath(profile));
-  }
-
-  redirect(getRoleHomePath(profile.role));
+  redirect(getStudentEntryPath(profile));
 }

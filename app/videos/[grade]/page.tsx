@@ -10,8 +10,12 @@ import {
 import { Card, CardText, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 
+type VideoLessonsByGradePageProps = {
+  params: Promise<{ grade: string }>;
+};
+
 export default async function VideoLessonsByGradePage(
-  props: PageProps<"/videos/[grade]">,
+  props: VideoLessonsByGradePageProps,
 ) {
   const params = await props.params;
 

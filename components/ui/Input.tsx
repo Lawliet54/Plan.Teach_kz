@@ -1,14 +1,25 @@
+﻿import type { InputHTMLAttributes } from "react";
+
 import { cn } from "@/lib/utils";
 
-type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
+type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
+  error?: string;
+  hint?: string;
 };
 
-export function Input({ label, className, id, ...props }: InputProps) {
+export function Input({
+  label,
+  error,
+  hint,
+  className,
+  id,
+  ...props
+}: InputProps) {
   return (
     <label className="block">
       {label ? (
-        <span className="mb-1 block text-xs font-medium text-slate-700">
+        <span className="mb-1 block text-xs font-medium text-[var(--text-soft)]">
           {label}
         </span>
       ) : null}
@@ -16,11 +27,22 @@ export function Input({ label, className, id, ...props }: InputProps) {
       <input
         id={id}
         className={cn(
-          "h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[#4f31d4] focus:ring-4 focus:ring-[#4f31d4]/10",
+          "focus-ring h-9 w-full rounded-[var(--radius-sm)] border border-[var(--border)] bg-white px-3 text-sm font-normal text-[var(--text)] outline-none transition placeholder:text-[var(--text-faint)] disabled:cursor-not-allowed disabled:bg-[var(--surface-muted)] disabled:text-[var(--text-muted)]",
+          error && "border-[#fca5a5] focus:border-[var(--danger)]",
           className
         )}
         {...props}
       />
+
+      {error ? (
+        <span className="mt-1 block text-xs font-medium text-[var(--danger)]">
+          {error}
+        </span>
+      ) : hint ? (
+        <span className="mt-1 block text-xs text-[var(--text-muted)]">
+          {hint}
+        </span>
+      ) : null}
     </label>
   );
 }

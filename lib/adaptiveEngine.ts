@@ -44,8 +44,21 @@ export type StoredAdaptiveProgress = {
   history: AdaptiveHistoryItem[];
 };
 
+export type AdaptiveProgressRecord = StoredAdaptiveProgress & {
+  grade: number;
+  topicSlug: string;
+};
+
+export type SaveAdaptiveAttemptRemoteResult = {
+  progress: AdaptiveProgressRecord;
+  gradeProgress: AdaptiveProgressRecord[];
+  decision: AdaptiveDecision;
+};
+
 export const TOPIC_PASS_PERCENT = 70;
 export const NEXT_LEVEL_UP_PERCENT = 90;
+
+const adaptiveProgressCache = new Map<string, AdaptiveProgressRecord>();
 
 export function getAdaptiveStorageKey(grade: number, topicSlug: string) {
   return `adaptive-progress:${grade}:${topicSlug}`;
@@ -54,16 +67,13 @@ export function getAdaptiveStorageKey(grade: number, topicSlug: string) {
 export function getNextLevel(level: TopicLevel): TopicLevel {
   if (level === "basic") return "medium";
   if (level === "medium") return "advanced";
+
   return "advanced";
 }
 
-export function getPreviousLevel(level: TopicLevel): TopicLevel {
-  if (level === "advanced") return "medium";
-  if (level === "medium") return "basic";
-  return "basic";
-}
-
-function createInitialProgress(level: TopicLevel): StoredAdaptiveProgress {
+export function createInitialProgress(
+  level: TopicLevel
+): StoredAdaptiveProgress {
   return {
     currentLevel: level,
     nextRecommendedLevel: level,
@@ -74,38 +84,7 @@ function createInitialProgress(level: TopicLevel): StoredAdaptiveProgress {
   };
 }
 
-export function readAdaptiveProgress(
-  grade: number,
-  topicSlug: string
-): StoredAdaptiveProgress | null {
-  if (typeof window === "undefined") return null;
-
-  try {
-    const raw = window.localStorage.getItem(
-      getAdaptiveStorageKey(grade, topicSlug)
-    );
-
-    if (!raw) return null;
-
-    return JSON.parse(raw) as StoredAdaptiveProgress;
-  } catch {
-    return null;
-  }
-}
-
-export function getAdaptiveTopicLevel(
-  grade: number,
-  topicSlug: string,
-  fallbackLevel: TopicLevel = "basic"
-): TopicLevel {
-  const progress = readAdaptiveProgress(grade, topicSlug);
-
-  if (!progress) return fallbackLevel;
-
-  return progress.currentLevel ?? fallbackLevel;
-}
-
-function buildDecision(params: {
+export function buildAdaptiveDecision(params: {
   level: TopicLevel;
   percent: number;
   attemptNumber: number;
@@ -122,9 +101,9 @@ function buildDecision(params: {
         nextTopicLevel: "advanced",
         isCompleted: true,
         message:
-          "Тақырып сәтті аяқталды. Оқушы күрделі деңгейде жоғары нәтиже көрсетті.",
+          "Тақырып сәтті аяқталды. Күрделі деңгейде жоғары нәтиже көрсетілді.",
         recommendation:
-          "Келесі тақырып күрделі деңгейде ашылады. Қосымша ретінде жобалық тапсырма беруге болады.",
+          "Келесі тақырып күрделі деңгейде ашылады. Қосымша жобалық тапсырма орындауға болады.",
       };
     }
 
@@ -133,10 +112,10 @@ function buildDecision(params: {
       currentTopicLevel: level,
       nextTopicLevel: nextLevel,
       isCompleted: true,
-      message:
-        "Тақырып сәтті аяқталды. Нәтиже 90%-дан жоғары.",
-      recommendation:
-        `Келесі тақырып ${nextLevel === "medium" ? "орташа" : "күрделі"} деңгейде беріледі.`,
+      message: "Тақырып сәтті аяқталды. Нәтиже 90%-дан жоғары.",
+      recommendation: `Келесі тақырып ${
+        nextLevel === "medium" ? "орташа" : "күрделі"
+      } деңгейде беріледі.`,
     };
   }
 
@@ -148,7 +127,7 @@ function buildDecision(params: {
       isCompleted: true,
       message: "Тақырып аяқталды. Нәтиже жеткілікті.",
       recommendation:
-        "Келесі тақырып осы деңгейде беріледі. Формула мен негізгі ұғымдарды бекіту ұсынылады.",
+        "Келесі тақырып осы деңгейде беріледі. Негізгі ұғымдарды бекіту ұсынылады.",
     };
   }
 
@@ -159,65 +138,144 @@ function buildDecision(params: {
     isCompleted: false,
     message:
       attemptNumber > 1
-        ? "Тақырып әлі өтпеді. Қайта тапсырған кезде де нәтиже 70%-дан төмен болды."
-        : "Тақырып әлі өтпеді. Келесі тақырып ашылмайды.",
+        ? "Қайта тапсыру нәтижесі де 70%-дан төмен болды."
+        : "Тақырып әлі аяқталмады. Келесі тақырып ашылмайды.",
     recommendation:
       attemptNumber > 1
-        ? "AI осы тақырыптағы әлсіз жерлерді көрсетіп, теорияны қайта түсіндіруі керек. Оқушы осы тақырыпты қайта тапсырады."
-        : "Алдымен теорияны қайта оқып, осы тақырыптың тапсырмасын қайта орындау керек.",
+        ? "AI көмекші арқылы әлсіз тұстарды қарап, теорияны қайталап шығыңыз."
+        : "Теорияны қайта оқып, тапсырманы қайта орындаңыз.",
   };
 }
 
-export function saveAdaptiveAttempt(
-  input: AdaptiveAttemptInput
-): StoredAdaptiveProgress {
-  if (typeof window === "undefined") {
-    return createInitialProgress(input.level);
+export function cacheAdaptiveProgress(records: AdaptiveProgressRecord[]) {
+  records.forEach((record) => {
+    adaptiveProgressCache.set(
+      getAdaptiveStorageKey(record.grade, record.topicSlug),
+      {
+        ...record,
+        history: record.history ?? [],
+      }
+    );
+  });
+}
+
+export function clearCachedAdaptiveProgress(grade?: number) {
+  if (typeof grade !== "number") {
+    adaptiveProgressCache.clear();
+    return;
   }
 
-  const oldProgress =
-    readAdaptiveProgress(input.grade, input.topicSlug) ??
-    createInitialProgress(input.level);
-
-  const attemptNumber = oldProgress.attempts + 1;
-
-  const decision = buildDecision({
-    level: input.level,
-    percent: input.percent,
-    attemptNumber,
+  adaptiveProgressCache.forEach((record, key) => {
+    if (record.grade === grade) {
+      adaptiveProgressCache.delete(key);
+    }
   });
-
-  const nextProgress: StoredAdaptiveProgress = {
-    currentLevel: input.level,
-    nextRecommendedLevel: decision.nextTopicLevel,
-    isCompleted: decision.isCompleted,
-    attempts: attemptNumber,
-    bestPercent: Math.max(oldProgress.bestPercent, input.percent),
-    lastPercent: input.percent,
-    lastCompletedAt: new Date().toISOString(),
-    decision,
-    history: [
-      ...(oldProgress.history ?? []),
-      {
-        level: input.level,
-        percent: input.percent,
-        correct: input.correct,
-        total: input.total,
-        completedAt: new Date().toISOString(),
-      },
-    ].slice(-30),
-  };
-
-  window.localStorage.setItem(
-    getAdaptiveStorageKey(input.grade, input.topicSlug),
-    JSON.stringify(nextProgress)
-  );
-
-  return nextProgress;
 }
 
-export function resetAdaptiveProgress(grade: number, topicSlug: string) {
-  if (typeof window === "undefined") return;
+export function replaceCachedAdaptiveProgress(
+  records: AdaptiveProgressRecord[],
+  grade?: number
+) {
+  clearCachedAdaptiveProgress(grade);
+  cacheAdaptiveProgress(records);
+}
 
-  window.localStorage.removeItem(getAdaptiveStorageKey(grade, topicSlug));
+export function getCachedAdaptiveProgressList() {
+  return Array.from(adaptiveProgressCache.values());
+}
+
+export function readAdaptiveProgress(
+  grade: number,
+  topicSlug: string
+): AdaptiveProgressRecord | null {
+  return (
+    adaptiveProgressCache.get(getAdaptiveStorageKey(grade, topicSlug)) ?? null
+  );
+}
+
+export function getAdaptiveTopicLevel(
+  grade: number,
+  topicSlug: string,
+  fallbackLevel: TopicLevel = "basic"
+): TopicLevel {
+  const progress = readAdaptiveProgress(grade, topicSlug);
+
+  return progress?.currentLevel ?? fallbackLevel;
+}
+
+export async function fetchAdaptiveProgress(
+  grade?: number
+): Promise<AdaptiveProgressRecord[]> {
+  const params = new URLSearchParams();
+
+  if (typeof grade === "number") {
+    params.set("grade", String(grade));
+  }
+
+  const query = params.toString();
+
+  const response = await fetch(
+    query ? `/api/learning/progress?${query}` : "/api/learning/progress",
+    {
+      method: "GET",
+      cache: "no-store",
+    }
+  );
+
+  const body = (await response.json()) as {
+    progress?: AdaptiveProgressRecord[];
+    error?: string;
+  };
+
+  if (!response.ok) {
+    throw new Error(body.error || "Прогресті жүктеу мүмкін болмады.");
+  }
+
+  const progress = body.progress ?? [];
+
+  replaceCachedAdaptiveProgress(progress, grade);
+
+  return progress;
+}
+
+export async function saveAdaptiveAttemptRemote(
+  input: AdaptiveAttemptInput
+): Promise<SaveAdaptiveAttemptRemoteResult> {
+  const response = await fetch("/api/learning/attempts", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      grade: input.grade,
+      topicSlug: input.topicSlug,
+      level: input.level,
+      correct: input.correct,
+      total: input.total,
+    }),
+  });
+
+  const body = (await response.json()) as {
+    progress?: AdaptiveProgressRecord;
+    gradeProgress?: AdaptiveProgressRecord[];
+    decision?: AdaptiveDecision;
+    error?: string;
+  };
+
+  if (
+    !response.ok ||
+    !body.progress ||
+    !body.gradeProgress ||
+    !body.decision
+  ) {
+    throw new Error(body.error || "Нәтижені сақтау мүмкін болмады.");
+  }
+
+  replaceCachedAdaptiveProgress(body.gradeProgress, input.grade);
+
+  return {
+    progress: body.progress,
+    gradeProgress: body.gradeProgress,
+    decision: body.decision,
+  };
 }

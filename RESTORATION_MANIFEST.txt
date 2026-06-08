@@ -1,0 +1,34 @@
+Plan.Teach_kz — FULL RESTORATION MANIFEST
+Date: 2026-06-06
+
+VALIDATION
+- TypeScript: PASS (tsc --noEmit --incremental false)
+- ESLint: PASS (0 errors, 0 warnings)
+- Next.js production source compile: PASS
+- Next.js route generation: PASS (41 static pages)
+- Proxy route guard: preserved
+- Existing student / teacher navigation: preserved
+
+DATABASE-FIRST RESTORATION
+- 016_adaptive_skill_architecture.sql
+- 017_task_packs_and_cinematic_analytics.sql
+- 018_lab_catalog_seed.sql
+- 019_enriched_task_pack_content.sql
+- 020_server_write_only_rls.sql
+- RESTORATION_MIGRATIONS_016_020.sql (combined SQL bundle)
+
+TASK BANK
+- Grades: 7, 8, 9, 10, 11
+- Complex packs per grade: 10
+- Total complex packs: 50
+- Per pack: 10 tests + 5 open calculations + 1 laboratory / practical work
+- Correct answers: server-side only
+
+SECURITY
+- Browser sessions cannot directly forge adaptive scores, mastery, recommendations, events or lab results.
+- Trusted task/lab/review mutations use lib/supabase/admin.ts.
+- SUPABASE_SERVICE_ROLE_KEY must exist only in server .env.local.
+- Teacher review route rechecks the teacher-student relationship on the server.
+
+INSTALLATION
+Read RESTORATION_GUIDE_KZ.md and run APPLY_RESTORATION.ps1 from an extracted copy.

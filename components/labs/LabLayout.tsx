@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 
 import type { LabDefinition } from "@/data/labs";
@@ -26,6 +26,18 @@ export type LabCompletedResult = {
 
 export type LabSnapshot = LabMeasurementRow & { __graph?: { x: number; y: number }[] };
 
+function readCachedLabResult(labSlug: string): LabCompletedResult | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as LabCompletedResult[];
+    return parsed.find((result) => result.labSlug === labSlug) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function LabLayout({
   lab,
   columns,
@@ -38,24 +50,12 @@ export function LabLayout({
     onSnapshotChange: (next: LabSnapshot) => void;
   }) => React.ReactNode;
 }) {
+  const cachedResult = useMemo(() => readCachedLabResult(lab.slug), [lab.slug]);
   const [snapshot, setSnapshot] = useState<LabSnapshot>({});
-  const [measurements, setMeasurements] = useState<LabMeasurementRow[]>([]);
-  const [conclusion, setConclusion] = useState("");
-  const [savedStatus, setSavedStatus] = useState<"idle" | "saved">("idle");
-
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as LabCompletedResult[];
-      const existing = parsed.find((r) => r.labSlug === lab.slug);
-      if (!existing) return;
-      setMeasurements(existing.measurements || []);
-      setConclusion(existing.conclusion || "");
-    } catch {
-      // ignore
-    }
-  }, [lab.slug]);
+  const [measurements, setMeasurements] = useState<LabMeasurementRow[]>(() => cachedResult?.measurements ?? []);
+  const [conclusion, setConclusion] = useState(() => cachedResult?.conclusion ?? "");
+  const [savedStatus, setSavedStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [saveMessage, setSaveMessage] = useState("");
 
   const canComplete = useMemo(() => {
     return measurements.length >= 3 && conclusion.trim().length >= 20;
@@ -80,7 +80,7 @@ export function LabLayout({
     setSavedStatus("idle");
   };
 
-  const onComplete = () => {
+  const onComplete = async () => {
     const score = Math.min(100, 40 + measurements.length * 10 + Math.min(40, conclusion.trim().length));
     const result: LabCompletedResult = {
       labSlug: lab.slug,
@@ -90,14 +90,37 @@ export function LabLayout({
       completedAt: new Date().toISOString(),
     };
 
+    setSavedStatus("saving");
+    setSaveMessage("Нәтиже дерекқорға жіберіліп жатыр...");
+
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       const existing = raw ? (JSON.parse(raw) as LabCompletedResult[]) : [];
       const next = [...existing.filter((r) => r.labSlug !== lab.slug), result];
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      setSavedStatus("saved");
     } catch {
-      // ignore
+      // Browser cache is an optional resilience layer. Server persistence continues.
+    }
+
+    try {
+      const response = await fetch(`/api/labs/${lab.slug}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          measurements,
+          conclusion: conclusion.trim(),
+          graphData: snapshot.__graph ?? [],
+          score,
+        }),
+      });
+      const payload = (await response.json()) as { error?: string; message?: string };
+      if (!response.ok) throw new Error(payload.error ?? "Нәтижені сақтау мүмкін болмады.");
+
+      setSavedStatus("saved");
+      setSaveMessage(payload.message ?? "Нәтиже сақталды және мұғалім аналитикасына жіберілді.");
+    } catch (error) {
+      setSavedStatus("error");
+      setSaveMessage(error instanceof Error ? error.message : "Нәтижені сақтау мүмкін болмады.");
     }
   };
 
@@ -109,9 +132,17 @@ export function LabLayout({
           Артқа
         </Button>
 
-        {savedStatus === "saved" ? (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">
-            Нәтиже сақталды
+        {savedStatus !== "idle" ? (
+          <div
+            className={
+              savedStatus === "error"
+                ? "rounded-[var(--radius-sm)] border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700"
+                : savedStatus === "saved"
+                  ? "rounded-[var(--radius-sm)] border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700"
+                  : "rounded-[var(--radius-sm)] border border-[var(--border-accent)] bg-[var(--purple-soft)] px-3 py-2 text-xs font-bold text-[var(--primary)]"
+            }
+          >
+            {saveMessage}
           </div>
         ) : null}
       </div>
@@ -160,6 +191,7 @@ export function LabLayout({
           onAddMeasurement={onAddMeasurement}
           onComplete={onComplete}
           canComplete={canComplete}
+          isSaving={savedStatus === "saving"}
           validationMessage={validationMessage}
         />
       </div>
@@ -170,8 +202,8 @@ export function LabLayout({
         <Card>
           <p className="text-xs font-black text-slate-700">Ескертпе</p>
           <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
-            Нәтижелер осы құрылғыда сақталады. Егер аккаунтпен синхрондау қажет
-            болса, кейін Supabase арқылы қосамыз.
+            Нәтиже Supabase дерекқорына сақталады. Интернет уақытша ажыраса,
+            браузердегі жергілікті көшірме резерв ретінде қалады.
           </p>
           <Link
             href="/results"

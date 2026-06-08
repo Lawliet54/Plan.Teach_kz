@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Loader2, CheckCircle2 } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { analyzeSolutionAction } from "@/app/ai/actions";
 import type { AiSolutionReview } from "@/lib/ai/types";

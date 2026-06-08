@@ -45,21 +45,6 @@ function getStatusClass(item: TaskResultHistoryItem) {
   return "border-amber-200 bg-amber-50 text-amber-700";
 }
 
-function ProgressBar({ value }: { value: number }) {
-  const safeValue = Math.max(0, Math.min(100, value));
-
-  return (
-    <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-      <div
-        className={`h-full rounded-full ${
-          safeValue >= 70 ? "bg-[#5b4ce6]" : "bg-amber-500"
-        }`}
-        style={{ width: `${safeValue}%` }}
-      />
-    </div>
-  );
-}
-
 function ResultsLineChart({ items }: { items: TaskResultHistoryItem[] }) {
   const chartItems = [...items]
     .sort(

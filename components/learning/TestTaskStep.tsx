@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckCircle2, ClipboardCheck } from "lucide-react";
-import { Card, CardTitle } from "@/components/ui/Card";
+import { CardTitle } from "@/components/ui/Card";
 import type { PhysicsTopic, TopicLevel } from "@/data/physicsTopics";
 import type { TaskSessionState } from "@/lib/taskSession";
 import { getTestQuestions } from "@/lib/taskSessionTest";

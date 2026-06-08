@@ -1,4 +1,5 @@
-import type { HTMLAttributes, ReactNode } from "react";
+﻿import type { HTMLAttributes, ReactNode } from "react";
+
 import { cn } from "@/lib/utils";
 
 export function Card({
@@ -8,7 +9,22 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-[10px] border border-slate-200 bg-white p-3 shadow-sm sm:p-4",
+        "rounded-[var(--radius-md)] border border-[var(--border)] bg-white p-3 shadow-[var(--shadow-xs)] sm:p-4",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+export function CardHeader({
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        "mb-3 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between",
         className
       )}
       {...props}
@@ -20,11 +36,13 @@ export function CardTitle({
   className,
   children,
   ...props
-}: HTMLAttributes<HTMLHeadingElement> & { children: ReactNode }) {
+}: HTMLAttributes<HTMLHeadingElement> & {
+  children: ReactNode;
+}) {
   return (
     <h2
       className={cn(
-        "text-[15px] font-black leading-tight text-slate-950 sm:text-base",
+        "text-[15px] font-semibold leading-tight tracking-[-0.01em] text-[var(--text)] sm:text-base",
         className
       )}
       {...props}
@@ -38,16 +56,33 @@ export function CardText({
   className,
   children,
   ...props
-}: HTMLAttributes<HTMLParagraphElement> & { children: ReactNode }) {
+}: HTMLAttributes<HTMLParagraphElement> & {
+  children: ReactNode;
+}) {
   return (
     <p
       className={cn(
-        "text-sm font-semibold leading-6 text-slate-600",
+        "text-sm font-normal leading-6 text-[var(--text-muted)]",
         className
       )}
       {...props}
     >
       {children}
     </p>
+  );
+}
+
+export function CardFooter({
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        "mt-3 flex flex-wrap items-center gap-2 border-t border-[var(--border-soft)] pt-3",
+        className
+      )}
+      {...props}
+    />
   );
 }

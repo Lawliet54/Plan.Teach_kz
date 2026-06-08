@@ -33,7 +33,9 @@ const labColumns: Record<string, { key: string; label: string }[]> = {
   ],
 };
 
-export default async function LabDetailPage(props: PageProps<"/labs/[slug]">) {
+type LabDetailPageProps = { params: Promise<{ slug: string }> };
+
+export default async function LabDetailPage(props: LabDetailPageProps) {
   const profile = await getCurrentProfile();
 
   if (!profile) {
