@@ -102,7 +102,6 @@ export function AiChatWorkspace({
   initialTopicSlug,
   initialLevel,
   initialQuestion,
-  studentContext,
 }: AiChatWorkspaceProps) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -161,6 +160,12 @@ export function AiChatWorkspace({
       setIsLoadingChats(false);
     }
   }
+
+  useEffect(() => {
+    void loadChats();
+    // The chat list is fetched once when the workspace opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function createChat() {
     setErrorText(null);
@@ -407,6 +412,8 @@ export function AiChatWorkspace({
     const url = new URL(window.location.href);
     url.searchParams.delete("q");
     window.history.replaceState({}, "", url.toString());
+    // sendMessage uses the latest active session; re-triggering on its function identity would duplicate the initial question.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuestion, activeSession, isLoadingChats, isSending]);
 
   useEffect(() => {

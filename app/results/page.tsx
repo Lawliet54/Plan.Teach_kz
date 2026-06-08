@@ -1,34 +1,9 @@
 import { redirect } from "next/navigation";
+import { Beaker, CheckCircle2, ClipboardCheck, Clock3, XCircle } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
-import { getCurrentProfile, getRoleHomePath } from "@/lib/auth";
-import { ResultsHistoryPanel } from "@/components/learning/ResultsHistoryPanel";
-
-export default async function ResultsPage() {
-  const profile = await getCurrentProfile();
-
-  if (!profile) {
-    redirect("/login");
-  }
-
-  if (profile.role !== "student") {
-    redirect(getRoleHomePath(profile.role));
-  }
-
-  if (!profile.teacher_id) {
-    redirect("/onboarding/teacher-select");
-  }
-
-  if (!profile.diagnostic_completed) {
-    redirect("/onboarding/diagnostic");
-  }
-
-  if (!profile.onboarding_completed) {
-    redirect("/onboarding/interests");
-  }
-
-  return (
-    <AppShell profile={profile} active="/results">
-      <ResultsHistoryPanel />
-    </AppShell>
-  );
-}
+import { Badge } from "@/components/ui/Badge";
+import { Card,CardText,CardTitle } from "@/components/ui/Card";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { getStudentAdaptiveSnapshot } from "@/lib/adaptive-engine/queries";
+import { getCurrentProfile,getRoleHomePath } from "@/lib/auth";
+export default async function ResultsPage(){const profile=await getCurrentProfile();if(!profile)redirect("/login");if(profile.role!=="student")redirect(getRoleHomePath(profile.role));const snapshot=await getStudentAdaptiveSnapshot(profile.id);return <AppShell profile={profile} active="/results"><div className="page-stack"><PageHeader eyebrow="Нәтижелер" title="Оқу әрекеттерінің тарихы" description="Тапсырма, есеп және зертхана нәтижелері тікелей дерекқордан алынады."/><div className="grid gap-2 sm:grid-cols-4">{[{icon:ClipboardCheck,label:"Барлық жауап",value:snapshot.packAttempts.length},{icon:CheckCircle2,label:"Дұрыс",value:snapshot.packAttempts.filter(a=>a.is_correct===true).length},{icon:Clock3,label:"Тексеруді күтуде",value:snapshot.packAttempts.filter(a=>a.review_status==="pending_review").length},{icon:Beaker,label:"Зертханалар",value:snapshot.labs.length}].map(({icon:Icon,label,value})=><Card key={label} className="p-3"><Icon className="h-4 w-4 text-[var(--primary)]"/><p className="mt-2 text-[11px] font-extrabold text-[var(--text-muted)]">{label}</p><p className="mt-1 text-xl font-black text-[var(--text)]">{String(value)}</p></Card>)}</div><section className="grid gap-3 lg:grid-cols-[1.1fr_.9fr]"><Card><CardTitle>Соңғы тапсырмалар</CardTitle><div className="mt-3 space-y-2">{snapshot.packAttempts.length?snapshot.packAttempts.slice(0,14).map(item=><div key={item.id} className="flex items-center justify-between gap-3 border-b border-[var(--border-soft)] pb-2"><div><p className="text-xs font-black text-[var(--text)]">{item.pack?.title??"Кешенді тапсырма"}</p><p className="mt-1 text-[11px] text-[var(--text-muted)]">{new Date(item.created_at).toLocaleString("kk-KZ")}</p></div>{item.review_status==="pending_review"?<Badge variant="warning"><Clock3 className="mr-1 h-3 w-3"/>Тексеруде</Badge>:item.is_correct?<Badge variant="success"><CheckCircle2 className="mr-1 h-3 w-3"/>Дұрыс</Badge>:<Badge variant="danger"><XCircle className="mr-1 h-3 w-3"/>Қайталау</Badge>}</div>):<CardText>Алғашқы кешенді жұмысты орындағаннан кейін тарих осы жерде көрінеді.</CardText>}</div></Card><Card><CardTitle>Зертхана нәтижелері</CardTitle><div className="mt-3 space-y-2">{snapshot.labs.length?snapshot.labs.map(lab=><div key={lab.id} className="flex items-center justify-between gap-3 border-l-2 border-[var(--cyan)] bg-[var(--cyan-soft)] px-2.5 py-2"><div><p className="text-xs font-black text-[var(--text)]">{lab.lab_slug}</p><p className="mt-1 text-[11px] text-[var(--text-muted)]">{new Date(lab.created_at).toLocaleDateString("kk-KZ")}</p></div><Badge variant="cyan">{Math.round(Number(lab.score))}%</Badge></div>):<CardText>Сақталған зертхана нәтижелері әзірге жоқ.</CardText>}</div></Card></section></div></AppShell>}

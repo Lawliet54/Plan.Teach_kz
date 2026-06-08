@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Loader2, Lightbulb } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { generateTaskHintAction } from "@/app/ai/actions";
 import type { AiTaskHint } from "@/lib/ai/types";

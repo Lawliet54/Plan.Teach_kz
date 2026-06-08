@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { BrainCircuit, Send } from "lucide-react";
+import { BrainCircuit, Send, Sparkles } from "lucide-react";
+
 import type { Grade, TopicLevel } from "@/data/physicsTopics";
 
 type TopicAiAskBoxProps = {
@@ -23,7 +24,8 @@ export function TopicAiAskBox({
 
   const suggestions = [
     `${topicTitle} тақырыбын қарапайым тілмен түсіндір`,
-    "Осы тақырып бойынша бір мысал көрсет",
+    "Формуланы қалай қолданатынымды көрсет",
+    "Осы тақырып бойынша бір есеп шығарып бер",
     "Қандай қателер жиі кездеседі?",
   ];
 
@@ -44,65 +46,78 @@ export function TopicAiAskBox({
   }
 
   return (
-    <section className="rounded-[10px] border border-[#ddd6ff] bg-[#f8f7ff] p-4 shadow-sm sm:p-5">
-      <div className="mb-3 flex items-start gap-3">
-        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-white text-[#5b4ce6] shadow-sm">
-          <BrainCircuit className="h-4 w-4" />
+    <section
+      id="topic-ai"
+      className="scroll-mt-20 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-accent)] bg-[var(--purple-soft)] shadow-[var(--shadow-xs)]"
+    >
+      <div className="px-3 py-3 sm:px-4 sm:py-4">
+        <div className="flex items-start gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[var(--radius-sm)] bg-[var(--primary)] text-white">
+            <BrainCircuit className="h-4 w-4" />
+          </span>
+
+          <div>
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-[var(--primary)]" />
+
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[var(--primary)]">
+                Контекстік AI көмекші
+              </p>
+            </div>
+
+            <h2 className="mt-1 text-base font-black text-[var(--text)]">
+              Тақырып бойынша сұрақ қойыңыз
+            </h2>
+
+            <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">
+              AI көмекші сіздің сыныбыңызды, ағымдағы тақырыпты және деңгейіңізді
+              ескеріп жауап береді.
+            </p>
+          </div>
         </div>
 
-        <div>
-          <h2 className="text-base font-black text-slate-950">
-            15. AI көмекші
-          </h2>
+        <div className="mt-3 rounded-[var(--radius-md)] border border-[var(--border)] bg-white p-2">
+          <textarea
+            value={question}
+            onChange={(event) => setQuestion(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                openAi();
+              }
+            }}
+            className="min-h-[76px] w-full resize-none rounded-[var(--radius-sm)] bg-transparent px-2 py-1.5 text-sm leading-6 text-[var(--text)] outline-none placeholder:text-[var(--text-muted)]"
+            placeholder="Мысалы: формуладағы шамалардың байланысын қарапайым тілмен түсіндір"
+          />
 
-          <p className="mt-1 text-sm leading-6 text-slate-600">
-            Түсінбей қалған жеріңіз болса, сұрағыңызды жазыңыз. AI көмекші осы
-            тақырып, сынып және деңгей бойынша жауап береді.
-          </p>
+          <div className="flex flex-col gap-2 border-t border-[var(--border-soft)] pt-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[10px] font-semibold text-[var(--text-muted)]">
+              Enter — жіберу · Shift + Enter — жаңа жол
+            </p>
+
+            <button
+              type="button"
+              onClick={() => openAi()}
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[var(--radius-sm)] bg-[var(--primary)] px-3 text-xs font-bold text-white transition hover:bg-[var(--primary-2)]"
+            >
+              <Send className="h-3.5 w-3.5" />
+              AI-дан сұрау
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-2">
-        <textarea
-          value={question}
-          onChange={(event) => setQuestion(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              openAi();
-            }
-          }}
-          className="min-h-[70px] w-full resize-none rounded-xl bg-transparent px-3 py-2 text-sm font-semibold leading-6 text-slate-900 outline-none placeholder:text-slate-400"
-          placeholder="Мысалы: осы формуланы қалай қолданамын?"
-        />
-
-        <div className="flex flex-col gap-2 border-t border-slate-100 pt-2 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-[11px] font-semibold text-slate-400">
-            Enter — жіберу, Shift + Enter — жаңа жол
-          </p>
-
-          <button
-            type="button"
-            onClick={() => openAi()}
-            className="inline-flex h-10 items-center justify-center rounded-2xl bg-[#5b4ce6] px-4 text-sm font-bold text-white transition hover:bg-[#493dd6]"
-          >
-            <Send className="mr-1.5 h-4 w-4" />
-            AI-дан сұрау
-          </button>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {suggestions.map((suggestion) => (
+            <button
+              key={suggestion}
+              type="button"
+              onClick={() => openAi(suggestion)}
+              className="rounded-full border border-[var(--border-accent)] bg-white px-2.5 py-1 text-[11px] font-semibold text-[var(--primary)] transition hover:bg-[var(--surface-soft)]"
+            >
+              {suggestion}
+            </button>
+          ))}
         </div>
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        {suggestions.map((item) => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => openAi(item)}
-            className="rounded-full border border-[#ddd6ff] bg-white px-3 py-1.5 text-xs font-bold text-[#5b4ce6] transition hover:bg-[#f1efff]"
-          >
-            {item}
-          </button>
-        ))}
       </div>
     </section>
   );

@@ -10,8 +10,12 @@ import { Card, CardText, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { CustomVideoPlayer } from "@/components/videos/CustomVideoPlayer";
 
+type VideoLessonDetailPageProps = {
+  params: Promise<{ grade: string; lessonId: string }>;
+};
+
 export default async function VideoLessonDetailPage(
-  props: PageProps<"/videos/[grade]/[lessonId]">,
+  props: VideoLessonDetailPageProps,
 ) {
   const params = await props.params;
 

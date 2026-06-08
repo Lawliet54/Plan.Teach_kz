@@ -1,36 +1,10 @@
 import { redirect } from "next/navigation";
 import { ClipboardCheck } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
-import { Card, CardText, CardTitle } from "@/components/ui/Card";
+import { TeacherReviewCard,type ReviewAttempt } from "@/components/teacher/TeacherReviewCard";
+import { Card,CardText,CardTitle } from "@/components/ui/Card";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { getCurrentProfile } from "@/lib/auth";
-
-export default async function TeacherSubmissionsPage() {
-  const profile = await getCurrentProfile();
-
-  if (!profile) redirect("/login");
-  if (profile.role !== "teacher" && profile.role !== "admin") redirect("/dashboard");
-
-  return (
-    <AppShell profile={profile} active="/teacher/submissions">
-      <div className="mb-4">
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#5b4ce6]">
-          Тексеру
-        </p>
-        <h1 className="mt-1 text-2xl font-black text-slate-950">
-          Тексерілетін жұмыстар
-        </h1>
-      </div>
-
-      <Card>
-        <div className="mb-3 grid h-10 w-10 place-items-center rounded-xl bg-[#f1efff]">
-          <ClipboardCheck className="h-5 w-5 text-[#5b4ce6]" />
-        </div>
-        <CardTitle>Жұмыс кезегі бос</CardTitle>
-        <CardText>
-          MVP-де бұл бөлім дайын placeholder. Оқушы тапсырма/сурет жібергенде
-          осы жерге review queue қосылады.
-        </CardText>
-      </Card>
-    </AppShell>
-  );
-}
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+function answerText(value:unknown){if(typeof value==="object"&&value&&"value" in value)return String((value as {value:unknown}).value??"");return String(value??"")}
+export default async function TeacherSubmissionsPage(){const profile=await getCurrentProfile();if(!profile)redirect("/login");if(profile.role!=="teacher"&&profile.role!=="admin")redirect("/dashboard");const supabase=await createSupabaseServerClient();const {data:attempts}=await supabase.from("task_pack_attempts").select("id,item_id,pack_id,student_id,submitted_answer,max_score,created_at,student:student_id(full_name),pack:pack_id(title)").eq("review_status","pending_review").order("created_at",{ascending:true}).limit(50);const itemIds=(attempts??[]).map(a=>a.item_id);const {data:items}=itemIds.length?await supabase.from("task_pack_items_public").select("id,title,prompt").in("id",itemIds):{data:[]};const itemMap=new Map((items??[]).map(i=>[i.id,i]));const rows:ReviewAttempt[]=(attempts??[]).map(attempt=>{const item=itemMap.get(attempt.item_id);return {id:attempt.id,studentName:(attempt.student as unknown as {full_name?:string})?.full_name??"Оқушы",packTitle:(attempt.pack as unknown as {title?:string})?.title??"Кешенді жұмыс",itemTitle:item?.title??"Ашық тапсырма",prompt:item?.prompt??"Тапсырма мәтіні",answer:answerText(attempt.submitted_answer),maxScore:Number(attempt.max_score),createdAt:attempt.created_at}});return <AppShell profile={profile} active="/teacher/submissions"><div className="page-stack"><PageHeader eyebrow="Тексеру" title="Қолмен бағаланатын жұмыстар" description="Есеп шығару жолдары мен зертханалық қорытындыларды тексеріп, нақты балл және пікір сақтаңыз."/><div className="space-y-3">{rows.length?rows.map(row=><TeacherReviewCard key={row.id} attempt={row}/>):<Card><span className="grid h-10 w-10 place-items-center rounded-[4px] bg-[var(--green-soft)] text-[var(--success)]"><ClipboardCheck className="h-5 w-5"/></span><CardTitle className="mt-3">Тексеру кезегі бос</CardTitle><CardText className="mt-1">Оқушы есеп немесе зертхана жіберген кезде жұмыс осы жерде автоматты түрде пайда болады.</CardText></Card>}</div></div></AppShell>}

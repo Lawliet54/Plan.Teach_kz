@@ -4,7 +4,6 @@ import { getCurrentProfile } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { aiService } from "@/lib/ai/ai-service";
 import type { AiChatMessage } from "@/lib/ai/types";
-import { redirect } from "next/navigation";
 
 /**
  * Create or get an active AI chat for a topic

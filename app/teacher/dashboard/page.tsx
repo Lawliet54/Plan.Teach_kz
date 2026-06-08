@@ -1,99 +1,16 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import {
-  BarChart3,
-  ClipboardCheck,
-  Medal,
-  TrendingUp,
-  UsersRound,
-} from "lucide-react";
+import { Activity, AlertTriangle, ArrowRight, BarChart3, BrainCircuit, CheckCircle2, ClipboardCheck, Gauge, Radar, UsersRound } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Card,CardText,CardTitle } from "@/components/ui/Card";
+import { getTeacherAdaptiveSnapshot } from "@/lib/adaptive-engine/queries";
 import { getCurrentProfile } from "@/lib/auth";
-
-export default async function TeacherDashboardPage() {
-  const profile = await getCurrentProfile();
-
-  if (!profile) {
-    redirect("/login");
-  }
-
-  if (profile.role !== "teacher" && profile.role !== "admin") {
-    redirect("/dashboard");
-  }
-
-  return (
-    <AppShell profile={profile} active="/teacher/dashboard">
-      <div className="mb-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#5b3ee4]">
-          Мұғалім панелі
-        </p>
-        <h1 className="mt-1 text-2xl font-black text-slate-950">
-          Қош келдіңіз, {profile.full_name}
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Оқушылардың прогресін, тапсырмаларын және аналитикасын бақылаңыз.
-        </p>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-4">
-        {[
-          ["Оқушылар", "0", UsersRound],
-          ["Тексерілетін жұмыс", "0", ClipboardCheck],
-          ["Орташа прогресс", "—", TrendingUp],
-          ["Марапаттар", "0", Medal],
-        ].map(([title, value, Icon]) => (
-          <section key={title as string} className="compact-card p-4">
-            <div className="mb-2 flex items-center gap-2">
-              <Icon className="h-4 w-4 text-[#5b3ee4]" />
-              <p className="text-xs font-bold text-slate-500">{title as string}</p>
-            </div>
-            <p className="text-2xl font-black text-slate-950">{value as string}</p>
-          </section>
-        ))}
-      </div>
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <section className="compact-card p-4">
-          <h2 className="text-base font-black text-slate-950">
-            Маған тіркелген оқушылар
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            5-қадамда оқушы мұғалімді таңдағанда осы жерде тізім пайда болады.
-          </p>
-
-          <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
-            <UsersRound className="mx-auto h-8 w-8 text-slate-400" />
-            <p className="mt-2 text-sm font-bold text-slate-700">
-              Әзірге оқушы жоқ
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
-              Оқушы тіркеліп, сізді мұғалім ретінде таңдағаннан кейін осында көрінеді.
-            </p>
-          </div>
-        </section>
-
-        <section className="compact-card p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-[#5b3ee4]" />
-            <h2 className="text-base font-black text-slate-950">
-              Жүйе статусы
-            </h2>
-          </div>
-
-          <div className="space-y-3">
-            {[
-              ["Auth", "Қосылды"],
-              ["Profiles", "Қосылды"],
-              ["Диагностика", "Келесі қадам"],
-              ["Оқушы аналитикасы", "Кейін"],
-            ].map(([label, value]) => (
-              <div key={label} className="flex justify-between rounded-xl bg-slate-50 p-3 text-sm">
-                <span className="text-slate-600">{label}</span>
-                <span className="font-black text-slate-950">{value}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
-    </AppShell>
-  );
-}
+import { getMyStudents } from "@/lib/db";
+function avg(items:number[]){return items.length?Math.round(items.reduce((a,b)=>a+b,0)/items.length):0}
+export default async function TeacherDashboardPage(){const profile=await getCurrentProfile();if(!profile)redirect("/login");if(profile.role!=="teacher"&&profile.role!=="admin")redirect("/dashboard");const students=await getMyStudents(profile.id);const snapshot=await getTeacherAdaptiveSnapshot(students.map(s=>s.id));const mastery=avg(snapshot.skills.map(s=>Number(s.mastery_score)));const weakByTitle=new Map<string,number[]>();snapshot.skills.forEach(row=>{const title=row.skill?.title??"Белгісіз дағды";weakByTitle.set(title,[...(weakByTitle.get(title)??[]),Number(row.mastery_score)])});const weak=[...weakByTitle.entries()].map(([title,scores])=>({title,score:avg(scores)})).sort((a,b)=>a.score-b.score).slice(0,5);const active=students.filter(s=>Boolean(s.last_seen_at)).length;return <AppShell profile={profile} active="/teacher/dashboard"><div className="page-stack">
+<section className="relative overflow-hidden rounded-[7px] border border-white/10 bg-[var(--navy)] p-4 text-white shadow-[0_16px_40px_rgba(7,21,34,.18)] sm:p-5"><div className="absolute inset-0 physics-grid opacity-20"/><div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#5747e7]/35 blur-3xl"/><div className="relative flex flex-col justify-between gap-4 lg:flex-row lg:items-center"><div><p className="text-[10px] font-black uppercase tracking-[.2em] text-[#a9a1ff]">Teacher command center</p><h1 className="mt-1 text-2xl font-black tracking-[-.035em]">Оқу процесін басқару орталығы</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-white/60">Оқушылардың әлсіз дағдыларын, тексеруді күтетін жұмыстарды және зертхана белсенділігін бір жерден бақылаңыз.</p><div className="mt-4 flex flex-wrap gap-2"><Button href="/teacher/submissions"><ClipboardCheck className="h-4 w-4"/>Жұмыстарды тексеру</Button><Button href="/teacher/analytics" variant="ghost" className="border-white/15 bg-white/8 text-white hover:bg-white/14"><BarChart3 className="h-4 w-4"/>Толық аналитика</Button></div></div><div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">{[{icon:UsersRound,label:"Оқушылар",value:students.length},{icon:Activity,label:"Белсенді",value:active},{icon:Gauge,label:"Mastery",value:`${mastery}%`},{icon:ClipboardCheck,label:"Review",value:snapshot.manualReviewCount}].map(({icon:Icon,label,value})=><div key={label} className="min-w-[112px] rounded-[4px] border border-white/12 bg-white/7 p-2.5 backdrop-blur"><Icon className="h-3.5 w-3.5 text-[#93c5fd]"/><p className="mt-2 text-[9px] font-black uppercase tracking-[.12em] text-white/42">{label}</p><p className="mt-0.5 text-lg font-black">{String(value)}</p></div>)}</div></div></section>
+<section className="grid gap-3 lg:grid-cols-[1.1fr_.9fr]"><Card><div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-[var(--warning)]"/><CardTitle>Қиындық тудырған дағдылар</CardTitle></div><Badge variant="warning">Top 5</Badge></div><div className="mt-4 space-y-3">{weak.length?weak.map(row=><div key={row.title}><div className="flex justify-between gap-3 text-xs font-extrabold"><span className="text-[var(--text-soft)]">{row.title}</span><span className={row.score<60?"text-[var(--danger)]":"text-[var(--warning)]"}>{row.score}%</span></div><div className="mt-1.5 h-1.5 overflow-hidden bg-[var(--surface-muted)]"><div className={row.score<60?"h-full bg-[var(--danger)]":"h-full bg-[var(--warning)]"} style={{width:`${row.score}%`}}/></div></div>):<CardText>Оқушылар тапсырма орындағаннан кейін әлсіз дағдылар осы жерде көрінеді.</CardText>}</div></Card><Card><div className="flex items-center gap-2"><BrainCircuit className="h-4 w-4 text-[var(--primary)]"/><CardTitle>Жүйе сигналдары</CardTitle></div><div className="mt-3 grid gap-2 sm:grid-cols-2">{[{icon:Radar,label:"Adaptive ұсыныс",value:snapshot.recommendationCount},{icon:ClipboardCheck,label:"Қолмен тексеру",value:snapshot.manualReviewCount},{icon:CheckCircle2,label:"Зертхана нәтижесі",value:snapshot.labs.length},{icon:BarChart3,label:"Тіркелген әрекет",value:snapshot.events.length}].map(({icon:Icon,label,value})=><div key={label} className="rounded-[4px] border border-[var(--border)] bg-[var(--surface-muted)] p-2.5"><Icon className="h-4 w-4 text-[var(--primary)]"/><p className="mt-2 text-[11px] font-extrabold text-[var(--text-muted)]">{label}</p><p className="mt-1 text-lg font-black text-[var(--text)]">{String(value)}</p></div>)}</div></Card></section>
+<section><div className="mb-3 flex items-end justify-between gap-3"><div><p className="data-label text-[var(--primary)]">Оқушылар</p><h2 className="mt-1 text-lg font-black text-[var(--text)]">Соңғы тізім</h2></div><Link href="/teacher/students" className="flex items-center gap-1 text-xs font-extrabold text-[var(--primary)]">Барлығын ашу <ArrowRight className="h-3.5 w-3.5"/></Link></div><div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">{students.slice(0,6).map(student=><Link key={student.id} href={`/teacher/students/${student.id}`}><Card className="h-full transition hover:border-[var(--border-accent)] hover:shadow-[var(--shadow-sm)]"><div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-[4px] bg-[var(--purple-soft)] text-xs font-black text-[var(--primary)]">{student.full_name.slice(0,1).toUpperCase()}</span><div className="min-w-0"><h3 className="truncate text-sm font-black text-[var(--text)]">{student.full_name}</h3><p className="mt-0.5 truncate text-xs text-[var(--text-muted)]">{student.email??"Email көрсетілмеген"}</p></div></div><div className="mt-3 flex flex-wrap gap-1.5"><Badge>{student.current_grade??"—"}-сынып</Badge><Badge variant={student.diagnostic_completed?"success":"warning"}>{student.diagnostic_completed?"Диагностика өтті":"Күтілуде"}</Badge></div></Card></Link>)}</div>{!students.length?<Card><CardTitle>Оқушы әзірге жоқ</CardTitle><CardText className="mt-1">Оқушы тіркеліп, сізді мұғалім ретінде таңдағаннан кейін осы жерде көрінеді.</CardText></Card>:null}</section>
+</div></AppShell>}

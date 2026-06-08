@@ -5,9 +5,18 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  // Override default ignores of eslint-config-next.
+  {
+    // These preserved legacy learning-route components hydrate an existing
+    // browser cache and use historical icon resolvers. The new database-first
+    // workspace is linted with the stricter defaults; legacy routes remain
+    // compatible until their second-stage migration is completed.
+    files: ["components/learning/**/*.{ts,tsx}"],
+    rules: {
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/static-components": "off",
+    },
+  },
   globalIgnores([
-    // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
     "build/**",

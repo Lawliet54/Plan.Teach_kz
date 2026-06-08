@@ -3,16 +3,24 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
+  AlertTriangle,
   ArrowRight,
   BarChart3,
   CheckCircle2,
   ClipboardList,
+  Loader2,
+  RefreshCw,
   RotateCcw,
   Trophy,
   XCircle,
 } from "lucide-react";
+
 import { CardTitle } from "@/components/ui/Card";
-import { levelLabels, type Grade, type PhysicsTopic, type TopicLevel } from "@/data/physicsTopics";
+import {
+  type Grade,
+  type PhysicsTopic,
+  type TopicLevel,
+} from "@/data/physicsTopics";
 import {
   clearTaskSession,
   saveTaskSession,
@@ -20,13 +28,13 @@ import {
   type TaskSessionState,
 } from "@/lib/taskSession";
 import {
+  buildTaskResultAiAdvice,
   calculateTaskSessionResult,
   createTaskResultHistoryItem,
   getTaskResultRecommendation,
   saveTaskResultHistory,
-  buildTaskResultAiAdvice,
 } from "@/lib/taskSessionResult";
-import { saveAdaptiveAttempt } from "@/lib/adaptiveEngine";
+import { saveAdaptiveAttemptRemote } from "@/lib/adaptiveEngine";
 import { getNextTopicTargetInGrade } from "@/lib/learningProgress";
 
 type ResultTaskStepProps = {
@@ -37,6 +45,8 @@ type ResultTaskStepProps = {
   session: TaskSessionState;
   onSessionChange: (session: TaskSessionState) => void;
 };
+
+type RemoteSaveStatus = "idle" | "saving" | "saved" | "error";
 
 function getResultTheme(percent: number) {
   if (percent >= 90) {
@@ -88,16 +98,32 @@ export function ResultTaskStep({
   session,
   onSessionChange,
 }: ResultTaskStepProps) {
-  const didSaveRef = useRef(false);
+  const didCalculateRef = useRef(false);
+  const savingRef = useRef(false);
 
   const [result, setResult] = useState<TaskSessionResult | null>(
     session.result
   );
 
-  useEffect(() => {
-    if (didSaveRef.current) return;
+  const [remoteSaveStatus, setRemoteSaveStatus] =
+    useState<RemoteSaveStatus>(
+      session.adaptiveSavedAt
+        ? "saved"
+        : session.adaptiveSaveError
+          ? "error"
+          : "idle"
+    );
 
-    didSaveRef.current = true;
+  const [remoteSaveError, setRemoteSaveError] = useState<string | null>(
+    session.adaptiveSaveError
+  );
+
+  const [progressVersion, setProgressVersion] = useState(0);
+
+  useEffect(() => {
+    if (didCalculateRef.current) return;
+
+    didCalculateRef.current = true;
 
     if (session.result && session.completedAt) {
       setResult(session.result);
@@ -112,20 +138,13 @@ export function ResultTaskStep({
 
     const completedAt = new Date().toISOString();
 
-    saveAdaptiveAttempt({
-      grade,
-      topicSlug: topic.slug,
-      level,
-      percent: calculatedResult.percent,
-      correct: calculatedResult.correct,
-      total: calculatedResult.total,
-    });
-
     const nextSession: TaskSessionState = {
       ...session,
       result: calculatedResult,
       completedAt,
       updatedAt: completedAt,
+      adaptiveSavedAt: null,
+      adaptiveSaveError: null,
     };
 
     saveTaskSession(nextSession);
@@ -141,13 +160,100 @@ export function ResultTaskStep({
 
     setResult(calculatedResult);
     onSessionChange(nextSession);
-  }, [grade, level, onSessionChange, session, topic]);
+  }, [level, onSessionChange, session, topic]);
+
+  useEffect(() => {
+    if (!result || !session.completedAt) return;
+
+    if (session.adaptiveSavedAt) {
+      setRemoteSaveStatus("saved");
+      setRemoteSaveError(null);
+      return;
+    }
+
+    if (session.adaptiveSaveError) {
+      setRemoteSaveStatus("error");
+      setRemoteSaveError(session.adaptiveSaveError);
+      return;
+    }
+
+    if (savingRef.current) return;
+
+    savingRef.current = true;
+    setRemoteSaveStatus("saving");
+    setRemoteSaveError(null);
+
+    let active = true;
+
+    void saveAdaptiveAttemptRemote({
+      grade,
+      topicSlug: topic.slug,
+      level,
+      percent: result.percent,
+      correct: result.correct,
+      total: result.total,
+    })
+      .then(() => {
+        if (!active) return;
+
+        const savedAt = new Date().toISOString();
+
+        const nextSession: TaskSessionState = {
+          ...session,
+          result,
+          adaptiveSavedAt: savedAt,
+          adaptiveSaveError: null,
+          updatedAt: savedAt,
+        };
+
+        saveTaskSession(nextSession);
+        onSessionChange(nextSession);
+
+        setRemoteSaveStatus("saved");
+        setRemoteSaveError(null);
+        setProgressVersion((value) => value + 1);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Нәтижені сақтау мүмкін болмады.";
+
+        const nextSession: TaskSessionState = {
+          ...session,
+          result,
+          adaptiveSavedAt: null,
+          adaptiveSaveError: message,
+          updatedAt: new Date().toISOString(),
+        };
+
+        saveTaskSession(nextSession);
+        onSessionChange(nextSession);
+
+        setRemoteSaveStatus("error");
+        setRemoteSaveError(message);
+      })
+      .finally(() => {
+        savingRef.current = false;
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [grade, level, onSessionChange, result, session, topic.slug]);
 
   const nextTarget = useMemo(() => {
-    if (!result || result.percent < 70) return null;
+    // Remote save completion increments this signal so the next-topic lookup is recalculated.
+    void progressVersion;
+
+    if (!result || result.percent < 70 || remoteSaveStatus !== "saved") {
+      return null;
+    }
 
     return getNextTopicTargetInGrade(grade, profileLevel);
-  }, [grade, profileLevel, result]);
+  }, [grade, profileLevel, progressVersion, remoteSaveStatus, result]);
 
   if (!result) {
     return (
@@ -162,6 +268,7 @@ export function ResultTaskStep({
   const theme = getResultTheme(result.percent);
   const Icon = theme.icon;
   const passed = result.percent >= 70;
+
   const advice = buildTaskResultAiAdvice({
     topic,
     level,
@@ -177,6 +284,22 @@ export function ResultTaskStep({
     });
 
     window.location.href = `/tasks/session?grade=${grade}&topic=${topic.slug}&level=${level}`;
+  }
+
+  function handleRemoteSaveRetry() {
+    const nextSession: TaskSessionState = {
+      ...session,
+      adaptiveSaveError: null,
+      adaptiveSavedAt: null,
+      updatedAt: new Date().toISOString(),
+    };
+
+    savingRef.current = false;
+    setRemoteSaveStatus("idle");
+    setRemoteSaveError(null);
+
+    saveTaskSession(nextSession);
+    onSessionChange(nextSession);
   }
 
   return (
@@ -218,6 +341,40 @@ export function ResultTaskStep({
           <ProgressBar value={result.percent} />
         </div>
       </div>
+
+      <section className="rounded-[10px] border border-slate-200 bg-white p-3 shadow-sm">
+        {remoteSaveStatus === "saving" ? (
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
+            <Loader2 className="h-4 w-4 animate-spin text-[#5b4ce6]" />
+            Нәтиже базаға сақталып жатыр...
+          </div>
+        ) : null}
+
+        {remoteSaveStatus === "saved" ? (
+          <div className="flex items-center gap-2 text-xs font-bold text-emerald-700">
+            <CheckCircle2 className="h-4 w-4" />
+            Нәтиже базаға сәтті сақталды.
+          </div>
+        ) : null}
+
+        {remoteSaveStatus === "error" ? (
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+            <div className="flex items-start gap-2 text-xs font-bold leading-5 text-rose-700">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{remoteSaveError || "Нәтижені сақтау мүмкін болмады."}</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleRemoteSaveRetry}
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-bold text-rose-700 hover:bg-rose-100"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Қайта сақтау
+            </button>
+          </div>
+        ) : null}
+      </section>
 
       <section className="rounded-[10px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <div className="mb-3 flex items-center gap-2">
@@ -265,65 +422,62 @@ export function ResultTaskStep({
 
       <section className="rounded-[10px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <div className="mb-3 flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-[#5b4ce6]" />
-            <CardTitle>AI кеңесі</CardTitle>
+          <BarChart3 className="h-4 w-4 text-[#5b4ce6]" />
+          <CardTitle>AI кеңесі</CardTitle>
         </div>
 
         <div className="rounded-2xl border border-[#ddd6ff] bg-[#f8f7ff] p-3">
-            <p className="text-sm font-black text-slate-950">
-            {advice.title}
-            </p>
+          <p className="text-sm font-black text-slate-950">{advice.title}</p>
 
-            <p className="mt-2 text-sm leading-6 text-slate-600">
+          <p className="mt-2 text-sm leading-6 text-slate-600">
             {advice.summary}
-            </p>
+          </p>
 
-            <div className="mt-3 grid gap-3 md:grid-cols-2">
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
             <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                <p className="mb-2 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
+              <p className="mb-2 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
                 Дамытатын тұстар
-                </p>
+              </p>
 
-                <div className="space-y-2">
+              <div className="space-y-2">
                 {advice.focusAreas.map((item, index) => (
-                    <div
+                  <div
                     key={`${item}-${index}`}
                     className="flex gap-2 text-sm font-semibold leading-6 text-slate-700"
-                    >
+                  >
                     <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#5b4ce6]" />
                     <span>{item}</span>
-                    </div>
+                  </div>
                 ))}
-                </div>
+              </div>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                <p className="mb-2 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
+              <p className="mb-2 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
                 Қате тапсырмалар бойынша кеңес
-                </p>
+              </p>
 
-                <div className="space-y-2">
+              <div className="space-y-2">
                 {advice.mistakeHints.map((item, index) => (
-                    <div
+                  <div
                     key={`${item}-${index}`}
                     className="rounded-xl bg-slate-50 p-2 text-sm font-semibold leading-6 text-slate-700"
-                    >
+                  >
                     {item}
-                    </div>
+                  </div>
                 ))}
-                </div>
+              </div>
             </div>
-            </div>
+          </div>
         </div>
       </section>
 
       <section className="flex flex-col gap-2 rounded-[10px] border border-slate-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-black text-slate-950">
-            Келесі әрекет
-          </p>
+          <p className="text-sm font-black text-slate-950">Келесі әрекет</p>
+
           <p className="mt-1 text-xs leading-5 text-slate-500">
-            Нәтиже тарихы “Нәтижелер” бетінде сақталады.
+            Келесі тақырып нәтиже базаға сақталғаннан кейін ашылады.
           </p>
         </div>
 

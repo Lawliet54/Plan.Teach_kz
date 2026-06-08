@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   AlertTriangle,
   BookOpen,
@@ -10,41 +11,18 @@ import {
   Lightbulb,
   ListChecks,
   Ruler,
-  Sparkles,
+  Sigma,
   Target,
   type LucideIcon,
 } from "lucide-react";
-import type { ReactNode } from "react";
-import { Card, CardTitle } from "@/components/ui/Card";
-import {
-  getContentRememberItems,
-  getFormulaExpression,
-  type TopicLevel,
-  type TopicLevelContent,
-} from "@/data/physicsTopics";
+
+import type { NormalizedTopicLevelContent } from "@/lib/contentModel";
 
 type TopicContentSectionProps = {
-  content: TopicLevelContent;
-  level: TopicLevel;
+  content: NormalizedTopicLevelContent;
 };
 
-function getLevelDescription(level: TopicLevel) {
-  if (level === "basic") {
-    return "Бұл деңгейде тақырып қарапайым тілмен түсіндіріледі. Негізгі ұғымдар, жеңіл мысалдар және бастапқы тапсырмалар беріледі.";
-  }
-
-  if (level === "medium") {
-    return "Бұл деңгейде оқушы формуланы қолдануды, салыстыруды және есеп шығару қадамдарын меңгереді.";
-  }
-
-  return "Бұл деңгейде оқушы тақырыпты талдау, тәжірибе, қателік және қорытынды жасау арқылы терең меңгереді.";
-}
-
-function toParagraphs(theory: TopicLevelContent["theory"]) {
-  return Array.isArray(theory) ? theory : [theory];
-}
-
-function SectionCard({
+function LessonSection({
   title,
   icon: Icon,
   children,
@@ -54,31 +32,30 @@ function SectionCard({
   children: ReactNode;
 }) {
   return (
-    <Card>
-      <div className="mb-3 flex items-center gap-2">
-        <Icon className="h-4 w-4 text-[#5b4ce6]" />
-        <CardTitle>{title}</CardTitle>
+    <section className="border-b border-slate-200 py-5 last:border-b-0">
+      <div className="mb-3 flex items-center gap-2.5">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-[#f1efff] text-[#5b4ce6]">
+          <Icon className="h-4 w-4" />
+        </span>
+
+        <h2 className="text-lg font-black text-slate-950">{title}</h2>
       </div>
 
       {children}
-    </Card>
+    </section>
   );
 }
 
 function NumberedItems({ items }: { items: string[] }) {
   return (
-    <div className="grid gap-2">
+    <div className="space-y-2">
       {items.map((item, index) => (
-        <div
-          key={`${item}-${index}`}
-          className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3"
-        >
-          <div className="grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-[#f1efff] text-xs font-black text-[#5b4ce6]">
+        <div key={`${item}-${index}`} className="flex items-start gap-2.5">
+          <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#f1efff] text-[10px] font-black text-[#5b4ce6]">
             {index + 1}
-          </div>
-          <p className="text-sm font-semibold leading-6 text-slate-700">
-            {item}
-          </p>
+          </span>
+
+          <p className="text-sm leading-7 text-slate-700">{item}</p>
         </div>
       ))}
     </div>
@@ -87,235 +64,232 @@ function NumberedItems({ items }: { items: string[] }) {
 
 export function TopicContentSection({
   content,
-  level,
 }: TopicContentSectionProps) {
-  const formulaExpression = getFormulaExpression(content.formula);
-  const formulaDetails =
-    content.formula && typeof content.formula === "object"
-      ? content.formula
-      : null;
-  const rememberItems = getContentRememberItems(content);
-  const intro = content.intro ?? content.simpleExplanation;
-  const workedExample =
-    content.workedExample ??
-    (content.example
-      ? {
-          title: "Мысал",
-          problem: content.example,
-          given: [],
-          solutionSteps: [],
-          answer: content.example,
-        }
-      : null);
-  const keyConcepts =
-    content.keyConcepts ??
-    rememberItems.map((item, index) => ({
-      term: `Негізгі ой ${index + 1}`,
-      definition: item,
-    }));
-
   return (
-    <>
-      <SectionCard title="1. Оқу мақсаты" icon={Target}>
-        <div className="rounded-2xl border border-[#ddd6ff] bg-[#f1efff] p-3">
-          <p className="text-sm font-bold leading-6 text-slate-900">
+    <article>
+      <LessonSection title="Сабақтың мақсаты және оқу нәтижесі" icon={Target}>
+        <div className="rounded-xl border border-[#ddd6ff] bg-[#f8f7ff] p-3">
+          <p className="text-sm font-bold leading-7 text-slate-800">
             {content.shortGoal}
           </p>
         </div>
+      </LessonSection>
 
-        <p className="mt-3 text-sm leading-6 text-slate-600">
-          {getLevelDescription(level)}
-        </p>
-      </SectionCard>
+      <LessonSection title="Тақырыпты түсіндіру" icon={BookOpen}>
+        {content.intro ? (
+          <p className="mb-3 text-sm font-semibold leading-7 text-slate-700">
+            {content.intro}
+          </p>
+        ) : null}
 
-      <SectionCard title="2. Тақырыпқа кіріспе" icon={Sparkles}>
-        <p className="text-sm leading-7 text-slate-700">{intro}</p>
-      </SectionCard>
-
-      <SectionCard title="3. Толық теория" icon={BookOpen}>
         <div className="space-y-3">
-          {toParagraphs(content.theory).map((paragraph, index) => (
-            <p key={index} className="text-sm leading-7 text-slate-700">
+          {content.theory.map((paragraph, index) => (
+            <p
+              key={`${paragraph}-${index}`}
+              className="text-sm leading-7 text-slate-700"
+            >
               {paragraph}
             </p>
           ))}
         </div>
-      </SectionCard>
 
-      <SectionCard title="4. Қарапайым түсіндіру" icon={Lightbulb}>
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-sm font-semibold leading-7 text-slate-800">
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <div className="flex items-center gap-2">
+            <Lightbulb className="h-4 w-4 shrink-0 text-amber-600" />
+
+            <p className="text-xs font-black text-amber-700">
+              Қарапайым тілмен
+            </p>
+          </div>
+
+          <p className="mt-1 text-sm font-semibold leading-7 text-slate-700">
             {content.simpleExplanation}
           </p>
         </div>
-      </SectionCard>
+      </LessonSection>
 
-      <SectionCard title="5. Негізгі ұғымдар" icon={BrainCircuit}>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {keyConcepts.map((concept) => (
-            <div
-              key={concept.term}
-              className="rounded-2xl border border-slate-200 bg-slate-50 p-3"
-            >
-              <p className="text-sm font-black text-slate-950">
-                {concept.term}
-              </p>
-              <p className="mt-1 text-sm leading-6 text-slate-600">
-                {concept.definition}
-              </p>
-            </div>
-          ))}
-        </div>
-      </SectionCard>
-
-      {formulaExpression ? (
-        <SectionCard title="6. Формула" icon={Calculator}>
-          <div className="rounded-2xl border border-[#ddd6ff] bg-[#f8f7ff] p-4">
-            <p className="text-center font-mono text-2xl font-black text-slate-950">
-              {formulaExpression}
-            </p>
-            {formulaDetails ? (
-              <>
-                <p className="mt-3 text-sm font-semibold leading-6 text-slate-700">
-                  {formulaDetails.explanation}
+      {content.keyConcepts.length > 0 ? (
+        <LessonSection title="Негізгі ұғымдар" icon={BrainCircuit}>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {content.keyConcepts.map((concept) => (
+              <div
+                key={concept.term}
+                className="rounded-xl border border-slate-200 bg-slate-50 p-3"
+              >
+                <p className="text-sm font-black text-slate-950">
+                  {concept.term}
                 </p>
-                <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                  {formulaDetails.symbols.map((item) => (
-                    <div
-                      key={item.symbol}
-                      className="rounded-xl border border-white bg-white p-2 shadow-sm"
-                    >
-                      <p className="font-mono text-sm font-black text-[#5b4ce6]">
-                        {item.symbol}
-                      </p>
-                      <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
-                        {item.meaning}
-                        {item.unit ? `, ${item.unit}` : ""}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : null}
+
+                <p className="mt-1 text-xs leading-5 text-slate-600">
+                  {concept.definition}
+                </p>
+              </div>
+            ))}
           </div>
-        </SectionCard>
+        </LessonSection>
       ) : null}
 
-      {content.units?.length ? (
-        <SectionCard title="7. Өлшем бірліктер" icon={Ruler}>
+      {content.formula ? (
+        <LessonSection title="Негізгі формула" icon={Calculator}>
+          <div className="rounded-xl border border-[#ddd6ff] bg-[#f8f7ff] p-4">
+            <p className="text-center font-mono text-xl font-black text-slate-950 sm:text-2xl">
+              {content.formula.expression}
+            </p>
+
+            <p className="mt-3 text-sm leading-7 text-slate-700">
+              {content.formula.explanation}
+            </p>
+          </div>
+        </LessonSection>
+      ) : null}
+
+      {content.formula?.symbols.length ? (
+        <LessonSection title="Физикалық шамалар" icon={Sigma}>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {content.formula.symbols.map((item) => (
+              <div
+                key={`${item.symbol}-${item.meaning}`}
+                className="rounded-xl border border-slate-200 bg-slate-50 p-3"
+              >
+                <p className="font-mono text-sm font-black text-[#5b4ce6]">
+                  {item.symbol}
+                </p>
+
+                <p className="mt-1 text-xs leading-5 text-slate-600">
+                  {item.meaning}
+                  {item.unit ? ` · ${item.unit}` : ""}
+                </p>
+              </div>
+            ))}
+          </div>
+        </LessonSection>
+      ) : null}
+
+      {content.units.length > 0 ? (
+        <LessonSection title="Өлшем бірліктері" icon={Ruler}>
           <div className="grid gap-2 sm:grid-cols-2">
             {content.units.map((unit) => (
               <div
                 key={`${unit.name}-${unit.symbol}`}
-                className="rounded-2xl border border-slate-200 bg-slate-50 p-3"
+                className="rounded-xl border border-slate-200 bg-slate-50 p-3"
               >
                 <p className="text-sm font-black text-slate-950">
                   {unit.name} · {unit.symbol}
                 </p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">
+
+                <p className="mt-1 text-xs leading-5 text-slate-600">
                   {unit.explanation}
                 </p>
               </div>
             ))}
           </div>
-        </SectionCard>
+        </LessonSection>
       ) : null}
 
-      {content.measurementTools?.length ? (
-        <SectionCard title="8. Өлшеу құралдары" icon={FlaskConical}>
+      {content.measurementTools.length > 0 ? (
+        <LessonSection title="Өлшеу құралдары" icon={FlaskConical}>
           <div className="grid gap-2 sm:grid-cols-2">
             {content.measurementTools.map((tool) => (
               <div
                 key={tool.name}
-                className="rounded-2xl border border-slate-200 bg-slate-50 p-3"
+                className="rounded-xl border border-slate-200 bg-slate-50 p-3"
               >
                 <p className="text-sm font-black text-slate-950">
                   {tool.name}
                 </p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">
+
+                <p className="mt-1 text-xs leading-5 text-slate-600">
                   {tool.use}
                 </p>
               </div>
             ))}
           </div>
-        </SectionCard>
+        </LessonSection>
       ) : null}
 
-      {content.realLifeExamples?.length ? (
-        <SectionCard title="9. Күнделікті өмірдегі мысалдар" icon={CheckCircle2}>
+      {content.realLifeExamples.length > 0 ? (
+        <LessonSection
+          title="Күнделікті өмірдегі мысалдар"
+          icon={CheckCircle2}
+        >
           <NumberedItems items={content.realLifeExamples} />
-        </SectionCard>
+        </LessonSection>
       ) : null}
 
-      {workedExample ? (
-        <SectionCard title="10. Қадамдық мысал" icon={ClipboardList}>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+      {content.workedExample ? (
+        <LessonSection title="Шешілген есеп" icon={ClipboardList}>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
             <p className="text-sm font-black text-slate-950">
-              {workedExample.title}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-slate-700">
-              {workedExample.problem}
+              {content.workedExample.title}
             </p>
 
-            {workedExample.given.length ? (
+            <p className="mt-2 text-sm leading-7 text-slate-700">
+              {content.workedExample.problem}
+            </p>
+
+            {content.workedExample.given.length > 0 ? (
               <div className="mt-3 rounded-xl bg-white p-3">
-                <p className="mb-2 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
+                <p className="mb-2 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">
                   Берілгені
                 </p>
-                <NumberedItems items={workedExample.given} />
+
+                <NumberedItems items={content.workedExample.given} />
               </div>
             ) : null}
 
-            {workedExample.solutionSteps.length ? (
+            {content.workedExample.solutionSteps.length > 0 ? (
               <div className="mt-3 rounded-xl bg-white p-3">
-                <p className="mb-2 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
+                <p className="mb-2 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">
                   Шешуі
                 </p>
-                <NumberedItems items={workedExample.solutionSteps} />
+
+                <NumberedItems items={content.workedExample.solutionSteps} />
               </div>
             ) : null}
 
             <div className="mt-3 rounded-xl border border-[#ddd6ff] bg-[#f8f7ff] p-3">
-              <p className="text-sm font-black text-slate-950">Жауабы</p>
-              <p className="mt-1 text-sm font-semibold leading-6 text-slate-700">
-                {workedExample.answer}
+              <p className="text-xs font-black text-[#5b4ce6]">Жауабы</p>
+
+              <p className="mt-1 text-sm font-bold leading-6 text-slate-800">
+                {content.workedExample.answer}
               </p>
             </div>
           </div>
-        </SectionCard>
+        </LessonSection>
       ) : null}
 
-      {content.commonMistakes?.length ? (
-        <SectionCard title="11. Жиі кездесетін қателер" icon={AlertTriangle}>
-          <div className="grid gap-2">
+      {content.commonMistakes.length > 0 ? (
+        <LessonSection title="Жиі кездесетін қателер" icon={AlertTriangle}>
+          <div className="space-y-2">
             {content.commonMistakes.map((item, index) => (
               <div
                 key={`${item.mistake}-${index}`}
-                className="rounded-2xl border border-amber-200 bg-amber-50 p-3"
+                className="rounded-xl border border-amber-200 bg-amber-50 p-3"
               >
-                <p className="text-sm font-black text-amber-800">
+                <p className="text-xs font-black text-amber-700">
                   Қате: {item.mistake}
                 </p>
-                <p className="mt-1 text-sm font-semibold leading-6 text-amber-900">
+
+                <p className="mt-1 text-xs font-semibold leading-5 text-slate-700">
                   Дұрысы: {item.correction}
                 </p>
               </div>
             ))}
           </div>
-        </SectionCard>
+        </LessonSection>
       ) : null}
 
-      {rememberItems.length ? (
-        <SectionCard title="12. Есте сақтау керек" icon={ListChecks}>
-          <NumberedItems items={rememberItems} />
-        </SectionCard>
+      {content.remember.length > 0 ? (
+        <LessonSection title="Есте сақтау керек" icon={ListChecks}>
+          <NumberedItems items={content.remember} />
+        </LessonSection>
       ) : null}
 
-      {content.checkQuestions?.length ? (
-        <SectionCard title="13. Өзін-өзі тексеру сұрақтары" icon={HelpCircle}>
+      {content.checkQuestions.length > 0 ? (
+        <LessonSection title="Өзін-өзі тексеру сұрақтары" icon={HelpCircle}>
           <NumberedItems items={content.checkQuestions} />
-        </SectionCard>
+        </LessonSection>
       ) : null}
-    </>
+    </article>
   );
 }

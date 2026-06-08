@@ -1,0 +1,1 @@
+export function calculateNextReviewDate(masteryScore:number,afterRemediation=false){const date=new Date();date.setDate(date.getDate()+(afterRemediation?2:masteryScore>=90?14:masteryScore>=80?7:3));return date}

@@ -16,7 +16,6 @@ import type {
   GenerateRouteRecommendationParams,
   GenerateTaskHintParams,
   GenerateTopicTutorParams,
-  HintLevel,
 } from "@/lib/ai/types";
 
 /**
@@ -327,7 +326,6 @@ ${weakTopics.join(", ")}
       diagnosticResult,
       interests,
       topics,
-      tasks,
     } = params;
 
     const systemPrompt = getRouteRecommendationSystemPrompt(

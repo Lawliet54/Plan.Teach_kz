@@ -1,14 +1,15 @@
 import { notFound, redirect } from "next/navigation";
+
 import { AppShell } from "@/components/layout/AppShell";
-import { getCurrentProfile, getRoleHomePath } from "@/lib/auth";
+import { LearningAccessGuard } from "@/components/learning/LearningAccessGuard";
+import { TaskSessionWorkspace } from "@/components/learning/TaskSessionWorkspace";
 import {
   getTopicBySlug,
   isValidGrade,
   type Grade,
   type TopicLevel,
 } from "@/data/physicsTopics";
-import { TaskSessionWorkspace } from "@/components/learning/TaskSessionWorkspace";
-import { LearningAccessGuard } from "@/components/learning/LearningAccessGuard";
+import { getCurrentProfile, getRoleHomePath } from "@/lib/auth";
 import { normalizeProfileLevel } from "@/lib/learningProgress";
 
 type PageProps = {
@@ -70,22 +71,22 @@ export default async function TaskSessionPage({ searchParams }: PageProps) {
     : normalizeProfileLevel(profile.level);
 
   return (
-    <AppShell profile={profile} active="/topics">
-        <LearningAccessGuard
+    <AppShell profile={profile} active="/tasks">
+      <LearningAccessGuard
         grade={grade}
         topicSlug={topic.slug}
         level={level}
         mode="task"
         profileLevel={profile.level}
-        >
+      >
         <TaskSessionWorkspace
-            grade={grade}
-            topic={topic}
-            level={level}
-            profileLevel={profile.level}
-            restart={restart}
+          grade={grade}
+          topic={topic}
+          level={level}
+          profileLevel={profile.level}
+          restart={restart}
         />
-        </LearningAccessGuard>
+      </LearningAccessGuard>
     </AppShell>
   );
 }

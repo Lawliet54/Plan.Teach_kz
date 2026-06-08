@@ -2,8 +2,10 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
+
 import type { Grade, TopicLevel } from "@/data/physicsTopics";
+import { fetchAdaptiveProgress } from "@/lib/adaptiveEngine";
 import {
   getLearningAccessRedirect,
   type LearningAccessMode,
@@ -27,28 +29,70 @@ export function LearningAccessGuard({
   children,
 }: LearningAccessGuardProps) {
   const router = useRouter();
-  const [canShow, setCanShow] = useState(false);
+
+  const [status, setStatus] = useState<"checking" | "ready" | "error">(
+    "checking"
+  );
+
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
-    setCanShow(false);
+    let active = true;
 
-    const redirect = getLearningAccessRedirect({
-      grade,
-      topicSlug,
-      requestedLevel: level,
-      mode,
-      initialLevel: profileLevel,
-    });
+    setStatus("checking");
 
-    if (redirect) {
-      router.replace(redirect.href);
-      return;
-    }
+    void fetchAdaptiveProgress(grade)
+      .then(() => {
+        if (!active) return;
 
-    setCanShow(true);
-  }, [grade, topicSlug, level, mode, profileLevel, router]);
+        const redirect = getLearningAccessRedirect({
+          grade,
+          topicSlug,
+          requestedLevel: level,
+          mode,
+          initialLevel: profileLevel,
+        });
 
-  if (!canShow) {
+        if (redirect) {
+          router.replace(redirect.href);
+          return;
+        }
+
+        setStatus("ready");
+      })
+      .catch(() => {
+        if (!active) return;
+
+        setStatus("error");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [grade, level, mode, profileLevel, retryKey, router, topicSlug]);
+
+  if (status === "error") {
+    return (
+      <div className="grid min-h-[360px] place-items-center rounded-[10px] border border-rose-200 bg-white p-4 text-center">
+        <div>
+          <p className="text-sm font-bold text-rose-700">
+            Оқу прогресін жүктеу мүмкін болмады.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => setRetryKey((value) => value + 1)}
+            className="mt-3 inline-flex h-8 items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-bold text-rose-700 hover:bg-rose-100"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Қайта тексеру
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (status !== "ready") {
     return (
       <div className="grid min-h-[360px] place-items-center rounded-[10px] border border-slate-200 bg-white text-sm font-semibold text-slate-500">
         <div className="flex items-center gap-2">

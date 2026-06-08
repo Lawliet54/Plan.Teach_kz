@@ -1,0 +1,1920 @@
+﻿АДАПТИВТІ ФИЗИКА ОҚУ ПЛАТФОРМАСЫ
+DEVELOPER-ГЕ АРНАЛҒАН ТОЛЫҚ ТЕХНИКАЛЫҚ ЛОГИКА ЖӘНЕ ІСКЕ АСЫРУ ТАЛАПТАРЫ
+
+Нұсқа: 1.0
+Жоба бағыты: 7–11 сыныптарға арналған физика пәнінен адаптивті оқу веб-платформасы
+Негізгі тіл: қазақ тілі
+Мақсат: developer осы құжатты алған кезде адаптивті оқу жүйесінің қандай логикамен жұмыс істеуі керектігін, қандай деректер сақталатынын, қандай API және сервистер қажет екенін, қандай жағдайда оқушыға қандай контент көрсетілетінін толық түсінуі керек.
+
+======================================================================
+1. НЕГІЗГІ МАҚСАТ
+======================================================================
+
+Платформа барлық оқушыға бірдей оқу жолын ұсынбауы керек.
+
+Жүйе әр оқушы үшін:
+- бастапқы білім деңгейін анықтайды;
+- әр тақырыптың ішіндегі нақты дағдыларды бөлек бағалайды;
+- дұрыс және қате жауаптарды сақтайды;
+- қате жауаптың қай дағдыға байланысты екенін анықтайды;
+- келесі тапсырманың қиындығын автоматты түрде таңдайды;
+- қажет болса қысқа түсіндіру, шешілген мысал және қосымша тапсырмалар береді;
+- жоғары нәтиже көрсеткен оқушыны жеңіл тапсырмалардан босатады;
+- әлсіз тақырыптарды белгілі бір уақыттан кейін қайталауға қайта ұсынады;
+- мұғалімге оқушының нақты әлсіз және мықты тұстарын көрсетеді.
+
+Адаптивтілік тек тақырып бойынша жалпы пайызды көрсету емес.
+Негізгі логика: тақырып → дағдылар → тапсырмалар → әрекеттер тарихы → mastery score → келесі ұсыныс.
+
+======================================================================
+2. НЕГІЗГІ ТЕРМИНДЕР
+======================================================================
+
+Topic:
+Оқу тақырыбы. Мысалы: "Тығыздық", "Архимед күші", "Ом заңы".
+
+Skill:
+Тақырып ішіндегі нақты меңгерілуі тиіс дағды.
+Мысалы:
+- тығыздық формуласын білу;
+- өлшем бірліктерін түрлендіру;
+- формуладан массаны шығару;
+- мәтіндік есепті талдау;
+- графикті оқу;
+- эксперимент нәтижесін түсіндіру.
+
+Prerequisite:
+Келесі дағдыны меңгеру үшін алдын ала қажет дағды.
+Мысалы:
+"см³ → м³ түрлендіру" дағдысын меңгермей Архимед күші есебін толық шешу қиын.
+
+Mastery Score:
+Оқушының белгілі бір дағдыны меңгеру көрсеткіші. 0–100 аралығы.
+
+Difficulty:
+Тапсырма қиындығы:
+- basic
+- intermediate
+- advanced
+
+Remediation:
+Оқушы қате жіберген кезде көрсетілетін түзету оқу жолы:
+- қысқа түсіндіру;
+- шешілген мысал;
+- жеңіл тапсырмалар;
+- қайта тексеру.
+
+Checkpoint:
+Тақырыпты аяқтау алдында берілетін қорытынды тексеру.
+
+Review Queue:
+Ұмытуды болдырмау үшін кейін қайталанатын дағдылар кезегі.
+
+======================================================================
+3. ПЛАТФОРМАНЫҢ НЕГІЗГІ ПРИНЦИПТЕРІ
+======================================================================
+
+3.1. Бір тақырып бірнеше skill-ге бөлінуі керек.
+
+Мысал: "Тығыздық" тақырыбы.
+
+Skill тізімі:
+1) density_definition
+   Тығыздық ұғымын түсінеді.
+
+2) density_formula
+   ρ = m / V формуласын біледі.
+
+3) formula_transformation
+   Формуладан m және V шамаларын шығарады.
+
+4) unit_conversion
+   кг, г, м³, см³ бірліктерін түрлендіреді.
+
+5) calculation
+   Сандық есеп шығарады.
+
+6) real_life_application
+   Өмірлік жағдайға байланысты есепті талдайды.
+
+7) graph_analysis
+   Масса–көлем графигін оқиды.
+
+3.2. Әр тапсырма бір немесе бірнеше skill-ді тексеруі керек.
+
+Мысалы:
+"Массасы 780 г, көлемі 100 см³ дененің тығыздығын тап."
+
+Тапсырма skill байланысы:
+- density_formula
+- unit_conversion
+- calculation
+
+3.3. Оқушының жалпы бағасы ғана емес, әр skill бойынша жеке masteryScore сақталуы керек.
+
+3.4. Оқушы тақырып бойынша жоғары нәтиже алса да, critical skill төмен болса, келесі деңгейге өтпеуі керек.
+
+Мысал:
+- жалпы нәтиже: 92%
+- unit_conversion: 48%
+
+Бұл жағдайда жүйе "advanced" деңгейге өткізбейді.
+Алдымен unit_conversion бойынша remediation береді.
+
+3.5. Оқушыны қажетсіз контентпен жүктемеу керек.
+
+Егер оқушы диагностикада жоғары деңгей көрсетсе:
+- ұзақ базалық теорияны міндетті түрде оқымайды;
+- қысқартылған теория көреді;
+- күрделі тапсырмаларға бірден өте алады;
+- checkpoint арқылы білімін растайды.
+
+3.6. Бір қате жауаптан кейін бірден деңгей төмендетілмейді.
+
+Жүйе соңғы бірнеше әрекетті талдайды:
+- соңғы 4–6 тапсырма;
+- қатарынан жіберілген қате саны;
+- hint қолдану саны;
+- тапсырманың қиындығы;
+- жауап беру уақыты;
+- қайта орындау нәтижесі.
+
+======================================================================
+4. РӨЛДЕР ЖӘНЕ ЖАЛПЫ ОҚУ АҒЫНЫ
+======================================================================
+
+Рөлдер:
+- student
+- teacher
+- admin
+
+Student:
+- алғаш тіркелгенде мұғалім таңдайды;
+- диагностикадан өтеді;
+- қызығушылықтарын таңдайды;
+- жеке оқу жолымен оқиды;
+- тапсырма орындайды;
+- зертханалық жұмыстар орындайды;
+- нәтижелерін және ұсыныстарын көреді;
+- AI көмекші қолданады.
+
+Teacher:
+- оқушылар тізімін көреді;
+- әр оқушының skill mastery нәтижелерін көреді;
+- әлсіз тақырыптарды көреді;
+- берілген тапсырмаларды тексереді;
+- қажет болса қолмен тапсырма тағайындайды;
+- адаптивті жүйе ұсыныстарын көреді;
+- оқушы прогресін сынып, тақырып және skill бойынша талдайды.
+
+Admin:
+- контентті басқарады;
+- topic, skill, task, theory, lab материалдарын қосады;
+- мұғалімдер мен оқушыларды басқарады;
+- контент сапасын тексереді.
+
+Student оқу ағымы:
+1) Register
+2) Мұғалім таңдау
+3) Диагностика
+4) Қызығушылық таңдау
+5) Dashboard
+6) Сынып таңдау
+7) Бөлім таңдау
+8) Тақырып таңдау
+9) Теория немесе қысқартылған теория
+10) Практикалық тапсырмалар
+11) Checkpoint
+12) Нәтиже
+13) Adaptive engine шешімі
+14) Келесі тақырып / remediation / review
+
+Маңызды:
+Onboarding тек бір рет орындалуы керек.
+Егер:
+- teacher_id бар;
+- diagnostic_completed = true;
+- onboarding_completed = true;
+- interests сақталған;
+болса, қайта кіргенде бірден /dashboard ашылады.
+
+======================================================================
+5. КОНТЕНТ ҚҰРЫЛЫМЫ
+======================================================================
+
+Әр тақырыпта төмендегі контент болуы тиіс:
+
+1) Қысқа теория
+2) Толық теория
+3) Негізгі анықтамалар
+4) Формулалар
+5) Өлшем бірліктері
+6) Өмірлік мысал
+7) Шешілген есеп
+8) Жиі кездесетін қателер
+9) Basic тапсырмалар
+10) Intermediate тапсырмалар
+11) Advanced тапсырмалар
+12) Графикпен тапсырмалар
+13) PISA стиліндегі тапсырмалар
+14) Зертханалық жұмыс немесе симуляция
+15) Checkpoint
+16) Remediation материалдары
+17) AI көмекшіге арналған topic context
+
+Әр topic ішінде кемінде 4–7 skill болуы керек.
+
+Әр skill үшін кемінде:
+- 1 қысқа түсіндіру;
+- 1 толық түсіндіру;
+- 1 шешілген мысал;
+- 3 basic тапсырма;
+- 3 intermediate тапсырма;
+- 2 advanced тапсырма;
+- 1 қайта тексеру тапсырмасы;
+болғаны дұрыс.
+
+======================================================================
+6. ДЕРЕКҚОР ҚҰРЫЛЫМЫ
+======================================================================
+
+Supabase/PostgreSQL ішінде төмендегі кестелерді жасау керек.
+
+----------------------------------------------------------------------
+6.1. profiles
+----------------------------------------------------------------------
+
+Мақсаты:
+Пайдаланушы профилі және onboarding күйі.
+
+Өрістер:
+- id uuid primary key references auth.users(id)
+- full_name text
+- role text check role in ('student', 'teacher', 'admin')
+- teacher_id uuid null references profiles(id)
+- grade integer null
+- diagnostic_completed boolean default false
+- onboarding_completed boolean default false
+- diagnostic_level text null check diagnostic_level in ('basic', 'intermediate', 'advanced')
+- interests jsonb default '[]'
+- created_at timestamptz default now()
+- updated_at timestamptz default now()
+
+----------------------------------------------------------------------
+6.2. grades
+----------------------------------------------------------------------
+
+Өрістер:
+- id bigint primary key
+- grade_number integer unique
+- title text
+- is_active boolean default true
+
+Seed:
+7, 8, 9, 10, 11
+
+----------------------------------------------------------------------
+6.3. sections
+----------------------------------------------------------------------
+
+Мақсаты:
+Сынып ішіндегі бөлімдер.
+
+Өрістер:
+- id uuid primary key
+- grade_id bigint references grades(id)
+- title text
+- slug text unique
+- order_index integer
+- is_active boolean default true
+
+----------------------------------------------------------------------
+6.4. topics
+----------------------------------------------------------------------
+
+Мақсаты:
+Физика тақырыптары.
+
+Өрістер:
+- id uuid primary key
+- section_id uuid references sections(id)
+- grade_id bigint references grades(id)
+- title text
+- slug text unique
+- description text
+- order_index integer
+- estimated_minutes integer
+- is_active boolean default true
+- has_lab boolean default false
+- created_at timestamptz default now()
+- updated_at timestamptz default now()
+
+Ескерту:
+- Қайталау тақырыптары topic ретінде енгізілмеуі керек.
+- ТЖБ topic ретінде енгізілмеуі керек.
+- БЖБ негізгі topic атауынан тазартылып, assessment_tag ретінде сақталуы керек.
+- Қайталанатын тақырып бірнеше сағатқа берілсе, бір topic ретінде сақталады.
+- оқу мақсаттары біріктіріледі.
+
+----------------------------------------------------------------------
+6.5. skills
+----------------------------------------------------------------------
+
+Мақсаты:
+Нақты білім және әрекет дағдылары.
+
+Өрістер:
+- id uuid primary key
+- code text unique
+- title text
+- description text
+- skill_type text
+- is_critical boolean default false
+- created_at timestamptz default now()
+
+skill_type мүмкін мәндері:
+- concept
+- formula
+- unit_conversion
+- calculation
+- graph_analysis
+- experiment
+- real_life_application
+- reasoning
+
+----------------------------------------------------------------------
+6.6. topic_skills
+----------------------------------------------------------------------
+
+Мақсаты:
+Topic пен skill арасындағы байланыс.
+
+Өрістер:
+- id uuid primary key
+- topic_id uuid references topics(id)
+- skill_id uuid references skills(id)
+- weight numeric default 1
+- is_required boolean default true
+- order_index integer
+- unique(topic_id, skill_id)
+
+weight:
+Тақырыптық нәтижені есептегенде skill маңыздылығы.
+Мысалы:
+- негізгі формула: 1.5
+- өлшем бірлігі: 1.5
+- анықтама: 1.0
+- қосымша өмірлік мысал: 0.8
+
+----------------------------------------------------------------------
+6.7. skill_prerequisites
+----------------------------------------------------------------------
+
+Мақсаты:
+Қай skill қай skill-ге тәуелді екенін көрсету.
+
+Өрістер:
+- id uuid primary key
+- skill_id uuid references skills(id)
+- prerequisite_skill_id uuid references skills(id)
+- minimum_mastery_score integer default 70
+- unique(skill_id, prerequisite_skill_id)
+
+Мысал:
+- calculation skill үшін prerequisite: formula және unit_conversion
+- experiment skill үшін prerequisite: concept және calculation
+
+----------------------------------------------------------------------
+6.8. learning_materials
+----------------------------------------------------------------------
+
+Мақсаты:
+Теория, түсіндіру, мысал, video, remediation контенттерін сақтау.
+
+Өрістер:
+- id uuid primary key
+- topic_id uuid references topics(id)
+- skill_id uuid null references skills(id)
+- material_type text
+- title text
+- content text
+- media_url text null
+- difficulty text null
+- order_index integer
+- is_active boolean default true
+- created_at timestamptz default now()
+
+material_type мүмкін мәндері:
+- short_theory
+- full_theory
+- definition
+- formula
+- unit_explanation
+- solved_example
+- common_mistake
+- remediation
+- video
+- ai_context
+
+difficulty:
+- basic
+- intermediate
+- advanced
+- null
+
+----------------------------------------------------------------------
+6.9. tasks
+----------------------------------------------------------------------
+
+Мақсаты:
+Тапсырмалар банкі.
+
+Өрістер:
+- id uuid primary key
+- topic_id uuid references topics(id)
+- title text
+- description text
+- task_type text
+- difficulty text
+- answer_type text
+- correct_answer jsonb
+- explanation text
+- estimated_seconds integer
+- max_score numeric default 1
+- remediation_material_id uuid null references learning_materials(id)
+- is_checkpoint boolean default false
+- is_active boolean default true
+- created_at timestamptz default now()
+- updated_at timestamptz default now()
+
+task_type мүмкін мәндері:
+- multiple_choice
+- numeric
+- short_text
+- matching
+- ordering
+- graph
+- pisa
+- lab
+- simulation
+- open_response
+
+answer_type мүмкін мәндері:
+- single_choice
+- multi_choice
+- number
+- text
+- json
+- file
+- manual_review
+
+difficulty:
+- basic
+- intermediate
+- advanced
+
+----------------------------------------------------------------------
+6.10. task_options
+----------------------------------------------------------------------
+
+Мақсаты:
+Multiple choice жауап нұсқалары.
+
+Өрістер:
+- id uuid primary key
+- task_id uuid references tasks(id)
+- option_text text
+- is_correct boolean default false
+- order_index integer
+
+Ескерту:
+Frontend-ке is_correct жіберілмеуі керек.
+Тексеру тек server-side орындалуы керек.
+
+----------------------------------------------------------------------
+6.11. task_skills
+----------------------------------------------------------------------
+
+Мақсаты:
+Тапсырма қандай skill-дерді тексеретінін сақтау.
+
+Өрістер:
+- id uuid primary key
+- task_id uuid references tasks(id)
+- skill_id uuid references skills(id)
+- weight numeric default 1
+- unique(task_id, skill_id)
+
+----------------------------------------------------------------------
+6.12. diagnostic_tests
+----------------------------------------------------------------------
+
+Мақсаты:
+Диагностикалық тесттер.
+
+Өрістер:
+- id uuid primary key
+- grade_id bigint references grades(id)
+- title text
+- description text
+- is_active boolean default true
+
+----------------------------------------------------------------------
+6.13. diagnostic_test_tasks
+----------------------------------------------------------------------
+
+Өрістер:
+- id uuid primary key
+- diagnostic_test_id uuid references diagnostic_tests(id)
+- task_id uuid references tasks(id)
+- order_index integer
+- weight numeric default 1
+
+Диагностикада basic, intermediate, advanced деңгейлерден тапсырмалар болуы керек.
+
+----------------------------------------------------------------------
+6.14. diagnostic_results
+----------------------------------------------------------------------
+
+Өрістер:
+- id uuid primary key
+- student_id uuid references profiles(id)
+- diagnostic_test_id uuid references diagnostic_tests(id)
+- score numeric
+- level text
+- skill_scores jsonb
+- completed_at timestamptz default now()
+
+----------------------------------------------------------------------
+6.15. student_attempts
+----------------------------------------------------------------------
+
+Мақсаты:
+Әр жауапты толық сақтау.
+
+Өрістер:
+- id uuid primary key
+- student_id uuid references profiles(id)
+- task_id uuid references tasks(id)
+- topic_id uuid references topics(id)
+- submitted_answer jsonb
+- is_correct boolean
+- score numeric
+- max_score numeric
+- difficulty text
+- used_hint boolean default false
+- hint_count integer default 0
+- time_spent_seconds integer
+- attempt_number integer default 1
+- feedback text null
+- created_at timestamptz default now()
+
+Маңызды:
+Әр әрекет өшірілмеуі керек.
+Түзету қажет болса жаңа attempt жазылады.
+Бұл аналитика үшін керек.
+
+----------------------------------------------------------------------
+6.16. student_skill_mastery
+----------------------------------------------------------------------
+
+Мақсаты:
+Әр оқушының әр skill бойынша ағымдағы жағдайын сақтау.
+
+Өрістер:
+- id uuid primary key
+- student_id uuid references profiles(id)
+- skill_id uuid references skills(id)
+- mastery_score numeric default 0
+- confidence numeric default 0
+- current_level text default 'basic'
+- total_attempts integer default 0
+- correct_attempts integer default 0
+- consecutive_correct integer default 0
+- consecutive_wrong integer default 0
+- hints_used integer default 0
+- last_practiced_at timestamptz null
+- next_review_at timestamptz null
+- updated_at timestamptz default now()
+- unique(student_id, skill_id)
+
+current_level:
+- basic
+- intermediate
+- advanced
+
+----------------------------------------------------------------------
+6.17. student_topic_progress
+----------------------------------------------------------------------
+
+Мақсаты:
+Topic бойынша жалпы прогресс.
+
+Өрістер:
+- id uuid primary key
+- student_id uuid references profiles(id)
+- topic_id uuid references topics(id)
+- status text default 'not_started'
+- current_level text default 'basic'
+- mastery_score numeric default 0
+- theory_completed boolean default false
+- checkpoint_score numeric default 0
+- remediation_required boolean default false
+- completed_at timestamptz null
+- last_activity_at timestamptz null
+- updated_at timestamptz default now()
+- unique(student_id, topic_id)
+
+status:
+- not_started
+- in_progress
+- remediation
+- review
+- completed
+
+----------------------------------------------------------------------
+6.18. student_review_queue
+----------------------------------------------------------------------
+
+Мақсаты:
+Қайталау тапсырмаларын жоспарлау.
+
+Өрістер:
+- id uuid primary key
+- student_id uuid references profiles(id)
+- skill_id uuid references skills(id)
+- topic_id uuid references topics(id)
+- scheduled_at timestamptz
+- reason text
+- status text default 'pending'
+- completed_at timestamptz null
+- created_at timestamptz default now()
+
+status:
+- pending
+- completed
+- skipped
+- expired
+
+reason:
+- low_mastery
+- after_remediation
+- spaced_review
+- teacher_assigned
+
+----------------------------------------------------------------------
+6.19. adaptive_recommendations
+----------------------------------------------------------------------
+
+Мақсаты:
+Жүйе оқушыға қандай ұсыныс бергенін сақтау.
+
+Өрістер:
+- id uuid primary key
+- student_id uuid references profiles(id)
+- topic_id uuid null references topics(id)
+- skill_id uuid null references skills(id)
+- recommendation_type text
+- reason text
+- payload jsonb
+- status text default 'active'
+- created_at timestamptz default now()
+- resolved_at timestamptz null
+
+recommendation_type:
+- continue_same_level
+- advance_level
+- open_next_topic
+- show_remediation
+- return_to_prerequisite
+- schedule_review
+- teacher_attention_required
+
+----------------------------------------------------------------------
+6.20. learning_events
+----------------------------------------------------------------------
+
+Мақсаты:
+Analytics үшін әрекеттер журналын сақтау.
+
+Өрістер:
+- id uuid primary key
+- student_id uuid references profiles(id)
+- event_type text
+- entity_type text
+- entity_id uuid null
+- metadata jsonb
+- created_at timestamptz default now()
+
+event_type мысалдары:
+- topic_opened
+- theory_started
+- theory_completed
+- task_opened
+- task_submitted
+- task_correct
+- task_wrong
+- hint_requested
+- remediation_started
+- remediation_completed
+- checkpoint_started
+- checkpoint_completed
+- review_completed
+- ai_help_requested
+
+======================================================================
+7. ДИАГНОСТИКА ЛОГИКАСЫ
+======================================================================
+
+Диагностика мақсаты:
+Оқушыны бәріне бірдей basic деңгейден бастатпау.
+
+Диагностика алғаш тіркелген кезде бір рет өтеді.
+
+Диагностика құрылымы:
+- 30% basic тапсырмалар
+- 45% intermediate тапсырмалар
+- 25% advanced тапсырмалар
+
+Диагностикада тек бір тақырып емес, базалық физикалық дағдылар тексерілуі керек:
+- формула қолдану;
+- өлшем бірліктерін түрлендіру;
+- қарапайым есеп;
+- графикті оқу;
+- логикалық талдау;
+- өмірлік жағдайға байланысты есеп.
+
+Диагностика нәтижесі:
+- 0–49% → basic
+- 50–79% → intermediate
+- 80–100% → advanced
+
+Бірақ жалпы пайыздан бөлек critical skill нәтижелері сақталуы керек.
+
+Мысал:
+Жалпы нәтиже: 82%
+unit_conversion: 45%
+graph_analysis: 90%
+calculation: 85%
+
+Бұл жағдайда:
+- оқушының жалпы diagnostic_level = intermediate
+- unit_conversion әлсіз skill ретінде белгіленеді
+- dashboard-та жеке remediation ұсынылады
+
+Диагностикадан кейін:
+1) profiles.diagnostic_completed = true
+2) profiles.diagnostic_level жаңартылады
+3) diagnostic_results жазылады
+4) student_skill_mastery бастапқы мәндері жасалады
+5) әлсіз skill-дер student_review_queue ішіне қосылады
+6) dashboard үшін adaptive_recommendations жасалады
+
+======================================================================
+8. SKILL MASTERY ЕСЕПТЕУ ЛОГИКАСЫ
+======================================================================
+
+MVP кезеңінде rule-based weighted update қолдану керек.
+
+Мақсат:
+Әр жаңа жауаптан кейін skill masteryScore жаңарту.
+
+Негізгі диапазон:
+0–100
+
+Бастапқы masteryScore:
+- жаңа оқушы, диагностика жоқ: 0
+- диагностика basic дұрыс: 40
+- диагностика intermediate дұрыс: 65
+- диагностика advanced дұрыс: 85
+- диагностика қате: алдыңғы мән өзгермейді немесе аздап төмендейді
+
+Әр тапсырмаға difficulty коэффициенті:
+- basic = 0.8
+- intermediate = 1.0
+- advanced = 1.2
+
+Hint коэффициенті:
+- hint қолданылмаған = 1.0
+- hint қолданылған = 0.7
+- бірнеше hint қолданылған = 0.5
+
+Attempt коэффициенті:
+- бірінші әрекет = 1.0
+- екінші әрекет = 0.85
+- үшінші және кейінгі әрекет = 0.7
+
+Skill weight:
+task_skills.weight арқылы алынады.
+
+Дұрыс жауап кезінде базалық өсім:
+- basic тапсырма: +6
+- intermediate тапсырма: +8
+- advanced тапсырма: +10
+
+Қате жауап кезінде базалық төмендеу:
+- basic тапсырма: -8
+- intermediate тапсырма: -7
+- advanced тапсырма: -5
+
+Неге advanced қате үшін төмендеу аз:
+Күрделі тапсырмада қате жіберу қалыпты.
+Ал basic тапсырмада қате жіберу базалық дағды әлсіз екенін көрсетеді.
+
+Формула:
+
+correctDelta =
+baseIncrease * difficultyCoefficient * hintCoefficient * attemptCoefficient * skillWeight
+
+wrongDelta =
+baseDecrease * skillWeight
+
+Егер жауап дұрыс:
+masteryScore = min(100, oldMastery + correctDelta)
+
+Егер жауап қате:
+masteryScore = max(0, oldMastery - wrongDelta)
+
+Confidence:
+- әр жаңа әрекеттен кейін біртіндеп өседі;
+- бір ғана дұрыс жауаптан кейін mastery жоғары болса да confidence төмен болуы мүмкін;
+- кемінде 4 әрекет болғанда confidence сенімді деңгейге жетеді.
+
+Ұсынылатын қарапайым формула:
+confidence = min(1, totalAttempts / 8)
+
+Қатарынан дұрыс жауап:
+- correct болса consecutive_correct + 1
+- wrong болса consecutive_correct = 0
+
+Қатарынан қате:
+- wrong болса consecutive_wrong + 1
+- correct болса consecutive_wrong = 0
+
+Мысал TypeScript логикасы:
+
+type Difficulty = "basic" | "intermediate" | "advanced";
+
+function getDifficultyCoefficient(difficulty: Difficulty): number {
+  if (difficulty === "basic") return 0.8;
+  if (difficulty === "advanced") return 1.2;
+  return 1.0;
+}
+
+function getBaseIncrease(difficulty: Difficulty): number {
+  if (difficulty === "basic") return 6;
+  if (difficulty === "advanced") return 10;
+  return 8;
+}
+
+function getBaseDecrease(difficulty: Difficulty): number {
+  if (difficulty === "basic") return 8;
+  if (difficulty === "advanced") return 5;
+  return 7;
+}
+
+function getHintCoefficient(hintCount: number): number {
+  if (hintCount <= 0) return 1;
+  if (hintCount === 1) return 0.7;
+  return 0.5;
+}
+
+function getAttemptCoefficient(attemptNumber: number): number {
+  if (attemptNumber <= 1) return 1;
+  if (attemptNumber === 2) return 0.85;
+  return 0.7;
+}
+
+function calculateNewMastery(params: {
+  oldMastery: number;
+  isCorrect: boolean;
+  difficulty: Difficulty;
+  hintCount: number;
+  attemptNumber: number;
+  skillWeight: number;
+}): number {
+  const {
+    oldMastery,
+    isCorrect,
+    difficulty,
+    hintCount,
+    attemptNumber,
+    skillWeight,
+  } = params;
+
+  if (isCorrect) {
+    const delta =
+      getBaseIncrease(difficulty) *
+      getDifficultyCoefficient(difficulty) *
+      getHintCoefficient(hintCount) *
+      getAttemptCoefficient(attemptNumber) *
+      skillWeight;
+
+    return Math.min(100, Math.round((oldMastery + delta) * 100) / 100);
+  }
+
+  const delta = getBaseDecrease(difficulty) * skillWeight;
+  return Math.max(0, Math.round((oldMastery - delta) * 100) / 100);
+}
+
+======================================================================
+9. TOPIC MASTERY ЕСЕПТЕУ
+======================================================================
+
+Topic masteryScore барлық skill-дердің салмақталған орташа мәнімен есептелуі керек.
+
+Формула:
+
+topicMastery =
+sum(skillMastery * topicSkillWeight)
+/
+sum(topicSkillWeight)
+
+Мысал:
+- concept = 90, weight = 1
+- formula = 80, weight = 1.5
+- unit_conversion = 50, weight = 1.5
+- calculation = 75, weight = 1.5
+- graph_analysis = 70, weight = 1
+
+topicMastery =
+(90*1 + 80*1.5 + 50*1.5 + 75*1.5 + 70*1)
+/
+(1 + 1.5 + 1.5 + 1.5 + 1)
+
+Қорытынды нәтиже тек topicMastery емес.
+
+Checkpoint, practice, lab және applied task нәтижелерін бөлек сақтау керек.
+
+Ұсынылатын формула:
+finalTopicScore =
+checkpointScore * 0.50 +
+practiceScore * 0.25 +
+laboratoryScore * 0.15 +
+appliedTaskScore * 0.10
+
+Егер тақырыпта lab жоқ болса:
+finalTopicScore =
+checkpointScore * 0.60 +
+practiceScore * 0.30 +
+appliedTaskScore * 0.10
+
+Advance шарты:
+- finalTopicScore >= 90
+- барлық required skill masteryScore >= 70
+- барлық critical skill masteryScore >= 80
+- checkpoint тапсырмалары орындалған
+- confidence жеткілікті: орташа confidence >= 0.5
+
+Егер жалпы пайыз жоғары, бірақ critical skill төмен болса:
+- advanced деңгей ашылмайды;
+- remediation көрсетіледі;
+- skill review queue қосылады.
+
+======================================================================
+10. ADAPTIVE ENGINE: НЕГІЗГІ ШЕШІМ ЛОГИКАСЫ
+======================================================================
+
+Adaptive engine сервер жағында жұмыс істеуі керек.
+
+Client тек:
+- тапсырманы көрсетеді;
+- жауапты жібереді;
+- сервер қайтарған келесі әрекетті көрсетеді.
+
+Client ішінде негізгі шешім логикасын сақтамау керек.
+Себебі frontend өзгертілуі мүмкін және нәтижені қолдан өзгерту қаупі бар.
+
+AdaptiveAction:
+- advance_level
+- open_next_topic
+- continue_same_level
+- show_remediation
+- return_to_prerequisite
+- schedule_review
+- teacher_attention_required
+
+Шешім қабылдау басымдық реті:
+
+1) Егер prerequisite skill < 50:
+   return_to_prerequisite
+
+2) Егер critical skill < 60:
+   show_remediation
+
+3) Егер consecutive_wrong >= 3:
+   show_remediation
+
+4) Егер бір skill бойынша 5 әрекеттен кейін masteryScore < 40:
+   teacher_attention_required
+
+5) Егер topic final score >= 90 және critical skill >= 80:
+   advance_level немесе open_next_topic
+
+6) Егер topic final score 70–89:
+   open_next_topic және кейін review queue
+
+7) Егер topic final score < 70:
+   show_remediation
+
+8) Егер тақырып аяқталғанына 3–14 күн өтсе:
+   schedule_review
+
+TypeScript псевдокод:
+
+type AdaptiveAction =
+  | "advance_level"
+  | "open_next_topic"
+  | "continue_same_level"
+  | "show_remediation"
+  | "return_to_prerequisite"
+  | "schedule_review"
+  | "teacher_attention_required";
+
+function chooseAdaptiveAction(params: {
+  finalTopicScore: number;
+  criticalSkillMinScore: number;
+  prerequisiteMinScore: number;
+  totalAttemptsForWeakSkill: number;
+  weakSkillScore: number;
+  consecutiveWrong: number;
+  recentAttemptsCount: number;
+}): AdaptiveAction {
+  const {
+    finalTopicScore,
+    criticalSkillMinScore,
+    prerequisiteMinScore,
+    totalAttemptsForWeakSkill,
+    weakSkillScore,
+    consecutiveWrong,
+    recentAttemptsCount,
+  } = params;
+
+  if (prerequisiteMinScore < 50) {
+    return "return_to_prerequisite";
+  }
+
+  if (criticalSkillMinScore < 60) {
+    return "show_remediation";
+  }
+
+  if (consecutiveWrong >= 3) {
+    return "show_remediation";
+  }
+
+  if (totalAttemptsForWeakSkill >= 5 && weakSkillScore < 40) {
+    return "teacher_attention_required";
+  }
+
+  if (recentAttemptsCount < 4) {
+    return "continue_same_level";
+  }
+
+  if (finalTopicScore >= 90 && criticalSkillMinScore >= 80) {
+    return "advance_level";
+  }
+
+  if (finalTopicScore >= 70) {
+    return "open_next_topic";
+  }
+
+  return "show_remediation";
+}
+
+======================================================================
+11. КЕЛЕСІ ТАПСЫРМАНЫ ТАҢДАУ ЛОГИКАСЫ
+======================================================================
+
+Жүйе random тапсырма бермеуі керек.
+Task selection нақты ережемен орындалуы керек.
+
+Кіріс:
+- student_id
+- topic_id
+- current skill mastery
+- topic current_level
+- recent attempts
+- already solved task ids
+- weak skills
+- review queue
+
+Task selection басымдығы:
+
+1) Егер active remediation бар:
+   remediation skill-ге арналған task таңда.
+
+2) Егер review queue ішінде мерзімі келген skill бар:
+   сол skill бойынша review task таңда.
+
+3) Егер weak skill бар:
+   masteryScore ең төмен required skill бойынша task таңда.
+
+4) Егер skill деңгейі basic және mastery >= 75:
+   intermediate task таңда.
+
+5) Егер skill деңгейі intermediate және mastery >= 85:
+   advanced task таңда.
+
+6) Егер advanced деңгейде жеткілікті нәтиже болса:
+   checkpoint немесе applied task таңда.
+
+7) Бірдей task қайта-қайта берілмеуі керек.
+   Соңғы 10 attempt ішіндегі task id қайталанбауы тиіс.
+   Тек task банкі жетіспеген жағдайда қайталауға болады.
+
+8) Бір ғана task_type көп қайталанбауы керек.
+   Мысалы, қатарынан тек multiple_choice бермеу.
+   Әр 3 тапсырмадан кейін task_type ауысуы керек:
+   - numeric
+   - graph
+   - pisa
+   - simulation
+   - short_text
+
+Task selection псевдокоды:
+
+async function selectNextTask(params: {
+  studentId: string;
+  topicId: string;
+}) {
+  const weakSkill = await findLowestRequiredSkill(params.studentId, params.topicId);
+  const activeRemediation = await findActiveRemediation(params.studentId, params.topicId);
+  const dueReview = await findDueReview(params.studentId, params.topicId);
+  const excludedTaskIds = await getRecentTaskIds(params.studentId, 10);
+
+  const targetSkill =
+    activeRemediation?.skillId ??
+    dueReview?.skillId ??
+    weakSkill.skillId;
+
+  const targetDifficulty = resolveDifficultyByMastery(weakSkill.masteryScore);
+
+  return findTask({
+    topicId: params.topicId,
+    skillId: targetSkill,
+    difficulty: targetDifficulty,
+    excludeTaskIds: excludedTaskIds,
+    rotateTaskType: true,
+  });
+}
+
+Difficulty resolution:
+- masteryScore < 50 → basic
+- masteryScore 50–79 → intermediate
+- masteryScore >= 80 → advanced
+
+Бірақ remediation кезінде әрқашан:
+- алдымен basic
+- кейін intermediate
+- соңында recheck
+ретімен беріледі.
+
+======================================================================
+12. REMEDIATION ЛОГИКАСЫ
+======================================================================
+
+Remediation қашан іске қосылады:
+- қатарынан 3 қате жауап;
+- critical skill < 60;
+- topic final score < 70;
+- prerequisite skill < 50;
+- бір skill бойынша hint тым көп қолданылды;
+- teacher қолмен remediation тағайындады.
+
+Remediation ағымы:
+1) Қате skill анықталады.
+2) Сол skill-ге арналған қысқа түсіндіру көрсетіледі.
+3) Жиі кездесетін қате көрсетіледі.
+4) Бір шешілген мысал көрсетіледі.
+5) 2 basic тапсырма беріледі.
+6) Егер екеуі де дұрыс болса, 2 intermediate тапсырма беріледі.
+7) Соңында recheck task беріледі.
+8) Нәтижеге байланысты:
+   - mastery >= 70 → remediation completed
+   - mastery < 70 → teacher_attention_required
+   - mastery 50–69 → қосымша review queue
+
+Remediation кезінде оқушыға:
+"Сіз қате жібердіңіз" деп қана айтпау керек.
+
+Дұрыс кері байланыс мысалы:
+"Формуланы дұрыс таңдадыңыз, бірақ көлемді м³ бірлігіне ауыстырмадыңыз. 1 м³ = 1 000 000 см³. Алдымен 250 см³ мәнін м³-ке айналдырып көріңіз."
+
+Wrong pattern сақтау ұсынылады:
+- wrong_formula
+- wrong_unit
+- calculation_error
+- graph_reading_error
+- incomplete_reasoning
+- random_guess
+- manual_review_required
+
+======================================================================
+13. ҚАЙТАЛАУ ЖҮЙЕСІ
+======================================================================
+
+Оқушы тақырыпты аяқтағаннан кейін дағды ұмытылуы мүмкін.
+Сондықтан review queue қажет.
+
+Қарапайым spaced review графигі:
+- mastery 70–79 → 3 күннен кейін
+- mastery 80–89 → 7 күннен кейін
+- mastery 90–100 → 14 күннен кейін
+- remediation аяқталған skill → 2 күннен кейін
+- critical skill → кемінде 7 күн ішінде бір рет қайта тексеру
+
+Review тапсырма саны:
+- 2–4 қысқа тапсырма
+- кемінде 1 applied немесе graph тапсырма
+- тек тест емес
+
+Review нәтижесі:
+- жақсы болса nextReviewAt ұзарады;
+- нашар болса remediation қайта ашылады.
+
+Псевдокод:
+
+function calculateNextReviewDate(masteryScore: number, afterRemediation: boolean): Date {
+  const now = new Date();
+
+  if (afterRemediation) {
+    now.setDate(now.getDate() + 2);
+    return now;
+  }
+
+  if (masteryScore >= 90) {
+    now.setDate(now.getDate() + 14);
+    return now;
+  }
+
+  if (masteryScore >= 80) {
+    now.setDate(now.getDate() + 7);
+    return now;
+  }
+
+  now.setDate(now.getDate() + 3);
+  return now;
+}
+
+======================================================================
+14. ЗЕРТХАНАЛЫҚ ЖҰМЫСТАРДЫ АДАПТИВТІ ЖҮЙЕГЕ ҚОСУ
+======================================================================
+
+Зертхана жай ғана бөлек бет болмауы керек.
+Ол topic және skill mastery-ге әсер етуі керек.
+
+Алғашқы зертханалар:
+- Гук заңы
+- Ом заңы
+- Архимед заңы
+- Ньютонның екінші заңы
+- Жарықтың шағылу заңы
+
+Әр зертханада:
+1) 2D визуализация
+2) параметр өзгерту
+3) өлшеу
+4) кесте толтыру
+5) график құру
+6) қорытынды жазу
+7) нәтиже сақтау
+
+Lab skill:
+- experiment_setup
+- measurement
+- data_table
+- graph_analysis
+- conclusion
+
+Lab бағалау:
+- параметрлерді дұрыс таңдау: 20%
+- өлшеу кестесі: 25%
+- график: 25%
+- қорытынды: 20%
+- әрекеттердің толықтығы: 10%
+
+Lab нәтижесі topic final score ішінде 15% үлеске ие.
+
+Егер lab жоқ болса, 15% басқа компоненттерге қайта бөлінеді.
+
+Lab әрекеттерін learning_events ішінде сақтау:
+- parameter_changed
+- measurement_added
+- graph_generated
+- conclusion_submitted
+- lab_completed
+
+======================================================================
+15. AI КӨМЕКШІ ЛОГИКАСЫ
+======================================================================
+
+AI көмекші adaptive engine орнына шешім қабылдамауы керек.
+Негізгі бағалау және маршрут таңдау тұрақты rule-based логикамен орындалады.
+
+AI міндеттері:
+- қате себебін қарапайым тілде түсіндіру;
+- дайын жауапты бірден бермеу;
+- жетелеуші сұрақ беру;
+- әлсіз skill-ге сәйкес мысал ұсыну;
+- оқушы деңгейіне сәйкес қысқа немесе толық түсіндіру;
+- ашық жауапқа алдын ала feedback беру;
+- мұғалімге қысқа аналитикалық қорытынды дайындау.
+
+AI-ға жіберілетін context:
+- topic title
+- skill title
+- task description
+- student submitted answer
+- correct answer server-side тексерілгеннен кейін
+- wrong pattern
+- mastery score
+- current level
+- бұрын қолданылған hints
+- allowed response style
+
+AI жауап беру ережесі:
+1) Бірден дайын жауапты көрсетпе.
+2) Бірінші рет: hint бер.
+3) Екінші рет: формула немесе бағыт көрсет.
+4) Үшінші рет: шешімнің бір қадамын көрсет.
+5) Соңында ғана толық түсіндірме беруге болады.
+6) Барлық жауап қазақ тілінде болсын.
+7) Математикалық формулалар дұрыс форматталсын.
+8) Оқушы деңгейіне сәйкес қысқа және түсінікті тіл қолданылсын.
+
+AI output сақтау:
+learning_events ішінде ai_help_requested
+және қажет болса ai_feedback_logs кестесінде.
+
+======================================================================
+16. STUDENT UI ЛОГИКАСЫ
+======================================================================
+
+Dashboard ішінде:
+- Жалпы прогресс
+- Бүгін жалғастыру керек тақырып
+- Әлсіз дағдылар
+- Қайталау керек тапсырмалар
+- Соңғы нәтижелер
+- Ұсынылған зертхана
+- AI кеңес
+- Мұғалім берген тапсырмалар
+
+Topic бетінде:
+- Тақырып атауы
+- Қысқа сипаттама
+- Оқушы деңгейі
+- Progress bar
+- Theory
+- Worked example
+- Tasks
+- Lab болса зертхана
+- Checkpoint
+- AI көмекші
+
+Оқушыға техникалық кодтарды көрсетпеу керек.
+Мысалы:
+unit_conversion емес,
+"Өлшем бірліктерін түрлендіру" деп көрсету керек.
+
+Remediation UI:
+- "Қай жерден қате кеткенін қарап шығайық"
+- Қысқа түсіндіру
+- Шешілген мысал
+- Қайталау тапсырмалары
+- "Қайта тексеру" батырмасы
+
+Advanced оқушы үшін:
+- "Қысқаша теория"
+- "Біліміңізді тексеру"
+- "Күрделі есепке өту"
+
+======================================================================
+17. TEACHER DASHBOARD ЛОГИКАСЫ
+======================================================================
+
+Teacher dashboard ішінде:
+1) Барлық оқушылар саны
+2) Белсенді оқушылар
+3) Орташа прогресс
+4) Қиындық тудырған тақырыптар
+5) Әлсіз skill тізімі
+6) Remediation қажет оқушылар
+7) Соңғы тапсырма нәтижелері
+8) Қайталау мерзімі келген оқушылар
+9) Зертханалық жұмыс нәтижелері
+10) Ашық жауаптар және қолмен тексеруді қажет ететін тапсырмалар
+
+Әр оқушы бетінде:
+- жалпы прогресс;
+- сынып;
+- диагностикалық деңгей;
+- topic progress;
+- әр skill mastery;
+- қатарынан қате саны;
+- hint саны;
+- соңғы әрекеттер;
+- AI жүйе ұсыныстары;
+- мұғалімнің жеке тапсырма тағайындауы;
+- мұғалім пікірі;
+- lab нәтижелері.
+
+Teacher үшін "Назар аудару қажет" статусы:
+- critical skill < 40
+- 5 әрекеттен кейін де mastery < 40
+- 2 remediation аяқталмай қалды
+- ұзақ уақыт кірмеді
+- checkpoint бірнеше рет өтпеді
+- ашық жауап manual review күтуде
+
+======================================================================
+18. API ЖӘНЕ SERVER SERVICE ҚҰРЫЛЫМЫ
+======================================================================
+
+Барлық негізгі логика сервер жағында орындалуы керек.
+
+Ұсынылатын API маршруттар:
+
+POST /api/onboarding/diagnostic/start
+Мақсаты:
+Диагностиканы бастау.
+
+GET /api/onboarding/diagnostic/tasks
+Мақсаты:
+Диагностикалық тапсырмаларды алу.
+
+POST /api/onboarding/diagnostic/submit
+Мақсаты:
+Диагностика нәтижесін есептеу және профильге сақтау.
+
+GET /api/learning/topics
+Мақсаты:
+Оқушыға ашық topic тізімін алу.
+
+GET /api/learning/topics/[topicSlug]
+Мақсаты:
+Topic бетінің мазмұнын алу.
+
+POST /api/learning/topics/[topicSlug]/start
+Мақсаты:
+Topic progress бастау.
+
+GET /api/learning/topics/[topicSlug]/next-task
+Мақсаты:
+Adaptive engine арқылы келесі тапсырманы таңдау.
+
+POST /api/learning/tasks/[taskId]/submit
+Мақсаты:
+Жауапты server-side тексеру, attempt сақтау, mastery update, recommendation қайтару.
+
+GET /api/learning/remediation/[skillId]
+Мақсаты:
+Әлсіз skill үшін remediation материалдарын алу.
+
+POST /api/learning/remediation/[skillId]/complete
+Мақсаты:
+Remediation аяқтау.
+
+GET /api/learning/reviews
+Мақсаты:
+Мерзімі келген review queue тапсырмаларын алу.
+
+POST /api/learning/reviews/[reviewId]/complete
+Мақсаты:
+Review нәтижесін сақтау.
+
+POST /api/labs/[labId]/submit
+Мақсаты:
+Lab нәтижелерін сақтау және topic score жаңарту.
+
+GET /api/analytics/student/dashboard
+Мақсаты:
+Student dashboard деректерін алу.
+
+GET /api/teacher/students/[studentId]/progress
+Мақсаты:
+Teacher үшін оқушы аналитикасын алу.
+
+GET /api/teacher/analytics/weak-skills
+Мақсаты:
+Teacher үшін әлсіз skill статистикасын алу.
+
+POST /api/teacher/assignments
+Мақсаты:
+Teacher жеке тапсырма тағайындау.
+
+======================================================================
+19. TASK SUBMIT КЕЗІНДЕГІ ТОЛЫҚ SERVER FLOW
+======================================================================
+
+POST /api/learning/tasks/[taskId]/submit шақырылғанда:
+
+1) Auth тексеру.
+2) Student role тексеру.
+3) Task бар-жоғын тексеру.
+4) Task student үшін ашық па, тексеру.
+5) correct_answer frontend-ке жіберілмегеніне көз жеткізу.
+6) submitted_answer тексеру.
+7) is_correct және score есептеу.
+8) attempt_number есептеу.
+9) student_attempts кестесіне жаңа жазба қосу.
+10) task_skills алу.
+11) Әр skill үшін student_skill_mastery жаңарту.
+12) topic mastery қайта есептеу.
+13) critical skill және prerequisite skill тексеру.
+14) adaptive action таңдау.
+15) adaptive_recommendations кестесіне жазу.
+16) қажет болса review queue қосу.
+17) қажет болса remediation ашу.
+18) learning_events ішіне task_submitted жазу.
+19) Client-ке қауіпсіз response қайтару.
+
+Response мысалы:
+
+{
+  "result": {
+    "isCorrect": false,
+    "score": 0,
+    "feedback": "Өлшем бірлігін қайта тексеріңіз."
+  },
+  "mastery": {
+    "topicScore": 64,
+    "updatedSkills": [
+      {
+        "skillId": "uuid",
+        "title": "Өлшем бірліктерін түрлендіру",
+        "masteryScore": 48
+      }
+    ]
+  },
+  "adaptiveAction": {
+    "type": "show_remediation",
+    "skillId": "uuid",
+    "message": "Алдымен өлшем бірліктерін түрлендіруді қайталап шығайық."
+  }
+}
+
+Frontend-ке мынаны жібермеу керек:
+- correct_answer
+- task_options.is_correct
+- server-only scoring config
+- internal reasoning
+- басқа оқушы деректері
+
+======================================================================
+20. OPEN RESPONSE ЖӘНЕ MANUAL REVIEW
+======================================================================
+
+Кейбір тапсырмалар автоматты тексерілмейді:
+- эссе;
+- қорытынды;
+- зертхана түсіндірмесі;
+- файл жүктеу;
+- күрделі дәлелдеу.
+
+Бұл жағдайда:
+- attempt status = pending_review
+- teacher queue ішіне түседі
+- AI алдын ала ұсыныс бере алады
+- соңғы бағаны teacher қояды
+
+Қосымша өрістер қажет болса:
+student_attempts:
+- review_status text default 'auto_checked'
+- teacher_score numeric null
+- teacher_feedback text null
+- reviewed_by uuid null
+- reviewed_at timestamptz null
+
+review_status:
+- auto_checked
+- pending_review
+- reviewed
+
+Teacher score бергеннен кейін:
+- mastery update қайта есептеледі
+- topic progress жаңарады
+- adaptive recommendation жаңарады
+
+======================================================================
+21. ҚАУІПСІЗДІК ЖӘНЕ RLS
+======================================================================
+
+Supabase RLS міндетті.
+
+Student:
+- тек өзінің profiles жазбасын көреді;
+- тек өзінің student_attempts жазбасын көреді;
+- тек өзінің progress және mastery жазбасын көреді;
+- басқа student деректерін көрмейді;
+- correct_answer көрмейді;
+- task option ішіндегі is_correct көрмейді.
+
+Teacher:
+- тек өзіне тіркелген student деректерін көреді;
+- өз student progress және attempts қарайды;
+- баға және feedback қоя алады;
+- admin контентін өзгерте алмайды.
+
+Admin:
+- барлық контентті басқарады;
+- барлық profile тізімін көреді;
+- teacher/student байланысты басқарады.
+
+Маңызды:
+service_role frontend ішінде ешқашан қолданылмайды.
+Server және browser Supabase client бөлек болуы керек.
+Role guard сервер жағында орындалуы керек.
+
+======================================================================
+22. EDGE CASE ТІЗІМІ
+======================================================================
+
+Developer міндетті түрде төмендегі жағдайларды өңдеуі керек:
+
+1) Task bank бос.
+   Response:
+   "Бұл бөлім үшін тапсырмалар әлі дайындалмаған."
+
+2) Оқушы барлық task-ты орындап қойған.
+   - review task қолдану;
+   - checkpoint ашу;
+   - teacher attention қажет болса көрсету.
+
+3) Бір topic ішінде skill байланысы жоқ.
+   - контент қатесі ретінде admin log жазу;
+   - topic-ті student-ке ашпау.
+
+4) Prerequisite skill табылмады.
+   - логқа жазу;
+   - негізгі basic remediation беру.
+
+5) Lab жоқ.
+   - topic final score формуласынан lab weight алып тастау.
+
+6) Diagnostic test бос.
+   - onboarding тоқтамауы керек;
+   - уақытша basic level беру;
+   - admin log жазу.
+
+7) Student submit батырмасын екі рет басып жіберді.
+   - idempotency key қолдану;
+   - бір ғана attempt жазу.
+
+8) Интернет ажырады.
+   - client retry;
+   - duplicate submit болдырмау.
+
+9) Teacher score өзгертті.
+   - mastery және topic progress қайта есептеу.
+
+10) AI жауап бермеді.
+   - static remediation мәтінін көрсету;
+   - негізгі оқу ағынын тоқтатпау.
+
+11) Оқушы topic-ті аяқтады, бірақ critical skill төмен.
+   - completed емес;
+   - remediation status.
+
+12) Оқушы advanced деңгейде қате жіберді.
+   - бірден basic-ке түсірмеу;
+   - соңғы бірнеше attempt талдау.
+
+======================================================================
+23. ANALYTICS
+======================================================================
+
+Student analytics:
+- жалпы прогресс;
+- topic progress;
+- skill mastery;
+- соңғы 7 күн әрекеті;
+- дұрыс жауап пайызы;
+- әлсіз дағдылар;
+- күшейген дағдылар;
+- review queue;
+- lab progress;
+- AI көмек сұрау саны.
+
+Teacher analytics:
+- сыныптың орташа нәтижесі;
+- topic бойынша орташа нәтиже;
+- skill бойынша орташа mastery;
+- ең қиын 10 skill;
+- ең көп қате болған тапсырмалар;
+- task difficulty сәйкестігі;
+- remediation саны;
+- manual review queue;
+- inactive students;
+- lab completion rate.
+
+Admin analytics:
+- контенті жоқ topic;
+- task bank аз topic;
+- skill байланысы жоқ task;
+- correct answer жоқ task;
+- бір difficulty деңгейі жоқ topic;
+- пайдаланылмаған материалдар;
+- қате конфигурациялар.
+
+======================================================================
+24. НАҚТЫ МЫСАЛ: "АРХИМЕД КҮШІ"
+======================================================================
+
+Topic:
+Архимед күші
+
+Skills:
+1) buoyancy_definition
+2) archimedes_formula
+3) liquid_density
+4) displaced_volume
+5) unit_conversion
+6) calculation
+7) experiment_analysis
+
+Prerequisites:
+- unit_conversion қажет displaced_volume үшін
+- displaced_volume қажет calculation үшін
+- liquid_density қажет calculation үшін
+
+Оқушы әрекеті:
+1) Формуланы дұрыс таңдады.
+2) Көлемді дұрыс анықтады.
+3) 250 см³ мәнін м³-ке қате аударды.
+4) Соңғы жауап қате шықты.
+
+Жүйе талдауы:
+- archimedes_formula: жоғары
+- displaced_volume: орташа
+- unit_conversion: төмен
+- calculation: төмен
+
+Жүйе шешімі:
+show_remediation(skill = unit_conversion)
+
+Оқушыға көрсетілетін ағым:
+1) "1 м³ = 1 000 000 см³" қысқа түсіндіру.
+2) Бір шешілген мысал.
+3) Екі жеңіл түрлендіру тапсырмасы.
+4) Бір intermediate тапсырма.
+5) Архимед күшіне байланысты қайта тексеру.
+6) Дұрыс болса topic checkpoint жалғасады.
+7) 2 күннен кейін review queue қосылады.
+
+======================================================================
+25. DEVELOPMENT ҚҰРЫЛЫМЫ
+======================================================================
+
+Ұсынылатын server-side модульдер:
+
+lib/adaptive-engine/
+  types.ts
+  constants.ts
+  mastery.ts
+  topic-score.ts
+  prerequisite.ts
+  recommendation.ts
+  task-selector.ts
+  review-scheduler.ts
+  remediation.ts
+  diagnostic.ts
+  analytics.ts
+
+lib/supabase/
+  browser.ts
+  server.ts
+  admin.ts
+
+app/api/learning/
+  topics/
+  tasks/
+  remediation/
+  reviews/
+
+app/api/onboarding/
+  diagnostic/
+
+app/api/teacher/
+  analytics/
+  assignments/
+  students/
+
+Ұсынылатын негізгі функциялар:
+
+calculateNewMastery()
+calculateTopicMastery()
+calculateFinalTopicScore()
+chooseAdaptiveAction()
+selectNextTask()
+findLowestRequiredSkill()
+findWeakCriticalSkills()
+findBrokenPrerequisites()
+createRemediationRecommendation()
+scheduleSkillReview()
+completeReview()
+recalculateAfterTeacherReview()
+buildStudentDashboard()
+buildTeacherStudentProgress()
+
+======================================================================
+26. MVP КЕЗЕҢІ
+======================================================================
+
+Бірінші нұсқада міндетті түрде жасалуы керек:
+
+1) Topic және skill құрылымы.
+2) task_skills байланысы.
+3) Diagnostic test.
+4) student_attempts сақтау.
+5) student_skill_mastery сақтау.
+6) mastery update.
+7) topic progress есептеу.
+8) 90 / 70 шектері.
+9) remediation ағымы.
+10) prerequisite тексеру.
+11) review queue.
+12) student dashboard ұсыныстары.
+13) teacher analytics.
+14) server-side task checking.
+15) Supabase RLS.
+16) барлық UI мәтіні қазақ тілінде.
+
+MVP-де міндетті емес:
+- Bayesian Knowledge Tracing
+- Item Response Theory
+- machine learning prediction
+- recommendation neural network
+- күрделі gamification
+- толық AI автоматты бағалау
+
+Алдымен rule-based engine дұрыс жұмыс істеуі керек.
+Кейін нақты оқушы әрекеттері жиналған кезде күрделі модель қосуға болады.
+
+======================================================================
+27. КЕЙІНГІ КЕЗЕҢ
+======================================================================
+
+Дерек жиналғаннан кейін:
+1) Bayesian Knowledge Tracing қосуға болады.
+2) Item Response Theory арқылы task difficulty автоматты калибрлеуге болады.
+3) Қай тапсырмада оқушы қате жіберетінін алдын ала болжауға болады.
+4) Жеке оқу уақытын оңтайландыруға болады.
+5) AI көмегі арқылы personalized explanation генерациялауға болады.
+
+Бірақ бұл кезең MVP аяқталғаннан кейін ғана басталады.
+
+======================================================================
+28. ACCEPTANCE CRITERIA
+======================================================================
+
+Жүйе дайын деп есептелуі үшін төмендегі талаптар орындалуы керек:
+
+1) Жаңа student тіркелгенде onboarding бір рет ашылады.
+2) Диагностика аяқталғаннан кейін diagnostic_level сақталады.
+3) Әр topic кемінде бір skill-мен байланысқан.
+4) Әр task кемінде бір skill-мен байланысқан.
+5) Student task тапсырған сайын жаңа attempt сақталады.
+6) Жауаптан кейін skill mastery жаңарады.
+7) Topic mastery қайта есептеледі.
+8) 90–100% нәтиже және critical skill >= 80 болса деңгей өседі немесе келесі topic ашылады.
+9) 70–89% болса келесі topic ашылады, review queue қосылады.
+10) 70%-дан төмен болса remediation ашылады.
+11) Critical skill төмен болса, жалпы пайыз жоғары болса да advanced ашылмайды.
+12) Қатарынан 3 қате жауаптан кейін remediation беріледі.
+13) Prerequisite skill < 50 болса, алдыңғы skill қайталауға беріледі.
+14) Бір task соңғы 10 әрекет ішінде қайта берілмейді.
+15) Teacher әр оқушының әлсіз skill тізімін көреді.
+16) Teacher attention required оқушылар бөлек көрсетіледі.
+17) Lab нәтижесі topic score-ға әсер етеді.
+18) Review queue белгіленген күні dashboard-та көрсетіледі.
+19) Frontend correct_answer мәнін алмайды.
+20) Student басқа student деректерін көре алмайды.
+21) Teacher тек өз student деректерін көреді.
+22) AI жұмыс істемесе де негізгі оқу ағымы тоқтамайды.
+23) UI ішінде developer-ге арналған code немесе slug көрсетілмейді.
+24) Барлық интерфейс мәтіні қазақ тілінде болады.
+25) Mobile және desktop нұсқада негізгі оқу ағыны толық жұмыс істейді.
+
+======================================================================
+29. DEVELOPER ҮШІН СОҢҒЫ НҰСҚАУ
+======================================================================
+
+Негізгі талап:
+Оқушы қате жауап бергенде жүйе оны жай ғана төмен бағаламауы керек.
+
+Жүйе:
+1) Қате қай skill-ге байланысты екенін анықтайды.
+2) Skill mastery жаңартады.
+3) Prerequisite тексереді.
+4) Critical skill тексереді.
+5) Қажет болса remediation береді.
+6) Қажет болса алдыңғы skill-ге қайтарады.
+7) Қажет болса review queue қосады.
+8) Мұғалімге нақты аналитика көрсетеді.
+9) Оқушыға келесі ең дұрыс әрекетті автоматты түрде ұсынады.
+
+Негізгі архитектура:
+Topic → Skill → Task → Attempt → Mastery → Recommendation → Review
+
+Осы архитектура сақталса, платформа шынайы адаптивті оқу платформасы болады.
